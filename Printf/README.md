@@ -25,7 +25,7 @@ My implementation supports all mandatory conversions required by the subject:
 * `%X` — hexadecimal in uppercase
 * `%%` — percent character
 
-The project is implemented as a static library named `libftprintf.a` and can be reused in other C projects.
+The project is built as a static library named `libftprintf.a` and can be reused in other C projects.
 
 I did not implement the optional bonus part of the project.
 
@@ -36,6 +36,7 @@ I did not implement the optional bonus part of the project.
 * [Description](#description)
 * [Function Reference](#function-reference)
 * [Algorithm and Data Structure](#algorithm-and-data-structure)
+* [Technical Decisions](#technical-decisions)
 * [Project Structure](#project-structure)
 * [Instructions](#instructions)
 * [Using ft_printf](#using-ft_printf)
@@ -63,38 +64,51 @@ I did not implement the optional bonus part of the project.
 | Hexadecimal | `%X`        | Prints an integer in uppercase hexadecimal.                                                         |
 | Format      | `%%`        | Prints the `%` character.                                                                           |
 
-### Supporting functions
+### Internal functions
 
-I separated the different conversion and output operations into helper functions instead of keeping the complete implementation inside `ft_printf()`. The project also reuses functions from my Libft implementation where appropriate.
-
-Some of the internal functionality includes:
-
-* Format conversion selection.
-* Character and string output.
-* Signed and unsigned integer handling.
-* Decimal and hexadecimal number conversion.
-* Pointer formatting.
-* Memory allocation and release for generated strings.
+| Function             | File                | Role                                                                                   |
+| -------------------- | ------------------- | -------------------------------------------------------------------------------------- |
+| `ft_format_selector` | `ft_printf.c`       | Receives the character after `%` and calls the matching handler.                       |
+| `ft_handle_p`        | `ft_printf.c`       | Prints a pointer as `0x` + lowercase hexadecimal, or `(nil)` for `NULL`.               |
+| `ft_handle_c`        | `ft_printf_utils.c` | Prints one character (including `\0`).                                                 |
+| `ft_handle_s`        | `ft_printf_utils.c` | Prints a string, or `(null)` for `NULL`.                                               |
+| `ft_handle_d`        | `ft_printf_utils.c` | Prints a signed integer using `ft_itoa` from my Libft. Used for both `%d` and `%i`.    |
+| `ft_handle_u`        | `ft_printf_utils.c` | Prints an unsigned integer using `ft_utoa`.                                            |
+| `ft_handle_x`        | `ft_printf_utils.c` | Prints a hexadecimal number; a parameter selects lowercase (`%x`) or uppercase (`%X`). |
+| `ft_utoa`            | `ft_toas.c`         | Converts an `unsigned int` into a newly allocated decimal string.                      |
+| `ft_xtoa`            | `ft_toas.c`         | Converts an `unsigned long` into a newly allocated hexadecimal string.                 |
+| `ft_hexlen`          | `ft_toas.c`         | Returns the number of hexadecimal digits of a number.                                  |
+| `ft_handle_percent`  | `ft_toas.c`         | Prints `%`. It does not consume any variadic argument.                                 |
 
 ---
 
 ## Algorithm and Data Structure
 
-The core of my implementation is based on a sequential parsing algorithm.
+The core of my implementation is a sequential parsing algorithm with a dispatcher.
 
-First, `ft_printf()` traverses the format string character by character. Normal characters are written directly to the output. When a `%` character is found, the following character is interpreted as a conversion specifier.
+`ft_printf()` traverses the format string character by character. Normal characters are written directly to the output. When a `%` character is found, the index moves to the next character, which is interpreted as a conversion specifier and passed to `ft_format_selector()`.
 
-The conversion specifier is passed to a format selector, which determines which operation must be performed. Each supported conversion is handled separately, keeping the implementation modular and making each part easier to understand and maintain.
+The selector only receives that single character, not the whole string. This keeps all the index logic inside `ft_printf()`, so there is only one place where the position in the format string is moved.
 
-For conversions that require an argument, I use the `va_list` mechanism provided by `<stdarg.h>`. The argument is retrieved according to the expected type using `va_arg()` and is then processed by the corresponding conversion function.
+The selector calls one handler per conversion. Every handler follows the same contract: it extracts its argument with `va_arg()`, writes the output with `write()`, and returns the number of characters written, or `-1` if something failed. Because all handlers return the same kind of value, `ft_printf()` can check for errors in a single place after each step, and add the result to the total count otherwise.
 
-For numerical conversions, the implementation converts the value into the required representation before writing it. Decimal and hexadecimal conversions use dedicated helper functions, while pointer values are formatted as hexadecimal addresses.
+For numerical conversions, the value is first converted into a dynamically allocated string (`ft_itoa`, `ft_utoa` or `ft_xtoa`) and then written with a single `write()` call.
 
-The project does not require a complex data structure. The main structures used by the implementation are the format string, the `va_list` object used to access the variable arguments, and dynamically allocated character strings when a conversion requires one.
+The project does not need a complex data structure. The main elements are the format string, the `va_list` object used to access the variable arguments, and the temporary strings allocated by numerical conversions.
 
-I chose this approach because the problem is naturally based on the relationship between a format string and a variable number of arguments. Keeping the parsing, conversion selection and individual output operations separated makes the implementation easier to follow and allows each conversion to be handled independently.
+I chose this approach because it separates three responsibilities: walking the format string, choosing the conversion, and producing each conversion's output. Each part can be understood, tested and modified independently.
 
-This design also makes the implementation extensible: additional format specifiers could be integrated into the selector and their corresponding handling functions without rewriting the entire parsing process.
+---
+
+## Technical Decisions
+
+* **Handlers receive `va_list *` instead of `va_list`.** If a `va_list` is passed by value to a function that calls `va_arg()` on it, the C standard leaves the caller's copy in an indeterminate state. It happens to work on Linux x86_64, where `va_list` is an array, but it is not portable. Passing a pointer guarantees that every handler advances the same `va_list` owned by `ft_printf()`.
+* **Error propagation.** Every call to `write()` or to a function that allocates memory is checked. A failure returns `-1`, which is propagated up to `ft_printf()`. `ft_printf()` then calls `va_end()` and returns `-1`, like the original `printf()`. A return of `0` is not an error (for example, `%s` with an empty string).
+* **`%c` reads an `int`.** A `char` passed to a variadic function is promoted to `int`, so the handler asks `va_arg()` for an `int` and converts it to `unsigned char`.
+* **`%d` and `%i` share one handler**, because they produce the same output in `printf()`.
+* **`ft_xtoa` uses `unsigned long`.** The same conversion is shared by `%x`, `%X` and `%p`. `%x` receives a 32-bit `unsigned int`, but a pointer on Linux x86_64 is 64 bits, so the conversion uses the wider type to avoid truncating addresses.
+* **`NULL` values** follow glibc: `%s` prints `(null)` and `%p` prints `(nil)`.
+* **Unknown specifiers and a trailing `%`.** The C standard defines both as undefined behaviour. My selector returns `0` for any unknown character: nothing is printed and it is not treated as an error. When `%` is the last character of the string, the index stops on the terminating `\0` instead of skipping it, so the loop never reads outside the string.
 
 ---
 
@@ -103,18 +117,25 @@ This design also makes the implementation extensible: additional format specifie
 ```text
 ft_printf/
 ├── Makefile
+├── README.md
 ├── ft_printf.h
 ├── ft_printf.c
-├── ft_format_selector.c
-├── ft_utoa.c
-├── ft_xtoa.c
+├── ft_printf_utils.c
+├── ft_toas.c
 └── libft/
-    └── ...
+    ├── Makefile
+    ├── libft.h
+    └── ft_*.c
 ```
 
-The project uses my Libft as an external dependency of `ft_printf`. The Libft source is not included in this repository archive, but it is included and correctly configured in the submitted project.
+| File                | Contents                                                        |
+| ------------------- | --------------------------------------------------------------- |
+| `ft_printf.c`       | `ft_printf`, `ft_format_selector` and `ft_handle_p`.            |
+| `ft_printf_utils.c` | Handlers for `%c`, `%s`, `%d`/`%i`, `%u` and `%x`/`%X`.         |
+| `ft_toas.c`         | Number-to-string conversions, `ft_hexlen` and the `%%` handler. |
+| `ft_printf.h`       | Prototypes and includes.                                        |
 
-The implementation is divided into several source files so that the main printing logic, conversion selection and numerical conversions remain separated.
+The project uses my Libft, which is included in the `libft/` directory with its own source files and Makefile. The main Makefile compiles Libft first and then adds the `ft_printf` objects to the same library.
 
 ---
 
@@ -128,7 +149,7 @@ The project can be compiled using:
 make
 ```
 
-This creates:
+This first builds `libft/libft.a` and then creates:
 
 ```text
 libftprintf.a
@@ -142,89 +163,64 @@ The Makefile uses:
 cc -Wall -Wextra -Werror
 ```
 
-and the required rules are available:
-
-```bash
-make
-make clean
-make fclean
-make re
-```
-
-The project uses `ar` to create the static library, as required by the subject.
+The static library is created with `ar`, as required by the subject. Running `make` a second time does not recompile or relink anything.
 
 ### Makefile rules
 
-| Rule     | Description                                    |
-| -------- | ---------------------------------------------- |
-| `all`    | Builds `libftprintf.a`.                        |
-| `clean`  | Removes object files.                          |
-| `fclean` | Removes object files and the compiled library. |
-| `re`     | Cleans the project and recompiles it.          |
+| Rule     | Description                                                        |
+| -------- | ------------------------------------------------------------------ |
+| `all`    | Builds Libft and `libftprintf.a`.                                  |
+| `clean`  | Removes object files (including Libft's).                          |
+| `fclean` | Removes object files and the compiled libraries.                   |
+| `re`     | Cleans the project and recompiles it.                              |
 
 ---
 
 ## Using ft_printf
 
-After compiling the project, `libftprintf.a` can be linked into another C project.
-
-For example, when compiling a program that uses the library:
+After compiling the project, `libftprintf.a` can be linked into another C project:
 
 ```bash
 cc main.c -L. -lftprintf
 ```
 
-The corresponding header must also be included in the source file:
+The header must also be included in the source file:
 
 ```c
 #include "ft_printf.h"
 ```
 
-This allows `ft_printf()` to be used in other projects in the same way as a regular static library function.
-
 ---
 
 ## Quality and Validation
 
-I validated the implementation through several checks during development.
-
-* Norminette
-* Tripouille tester
-* sfabi28 tester
-* Compilation with `-Wall -Wextra -Werror`
-* Memory leak checks
-* Comparison of the supported conversions with the behaviour expected from the original `printf()`
-
-The implementation supports all mandatory conversions from the subject and does not include the optional bonus features.
+* Norminette on all source and header files.
+* Compilation with `-Wall -Wextra -Werror`.
+* Tripouille tester.
+* sfabi28 tester.
+* Output and return value compared with the original `printf()` for edge cases: `%c` with `0`, `%s` with `NULL` and `""`, `INT_MIN`/`INT_MAX`, `%u` and `%x` with `-1`, `%p` with `NULL` and with the maximum address.
+* `write()` failure: with standard output closed (`./a.out >&-`), `ft_printf()` returns `-1`.
+* Memory leaks checked with `valgrind --leak-check=full`.
 
 ---
 
 ## Memory Management
 
-Some conversions require dynamically allocated memory, particularly when numerical values are converted into strings.
-
-I made sure that allocated memory is released once it is no longer required. Memory management was also checked during testing to ensure that the implementation does not produce leaks under the tested cases.
-
-The project therefore follows the memory management requirements of the 42 curriculum.
+`%d`, `%u`, `%x`, `%X` and `%p` use dynamically allocated strings. Each handler frees them on every exit path, both when `write()` succeeds and when it fails. If an allocation fails, the handler frees anything it had already allocated and returns `-1`.
 
 ---
 
 ## What I Learned
 
-The main concept I learned from this project was how variadic functions work in C.
-
-I learned how to use `va_list`, `va_start`, `va_arg` and `va_end` to create a function capable of receiving an indeterminate number of arguments.
-
-I also learned how the type and meaning of each argument can depend on information contained in another argument, in this case the format string.
+The main concept I learned from this project was how variadic functions work in C: how to use `va_list`, `va_start`, `va_arg` and `va_end`, how default argument promotions affect the type requested with `va_arg`, and why a `va_list` must be passed by pointer when several functions share it.
 
 Beyond variadic functions, the project helped me improve my ability to:
 
 * Parse and process formatted strings.
-* Organize a project into independent functions.
-* Handle different integer representations.
-* Work with pointers and dynamically allocated memory.
-* Separate conversion logic from output logic.
-* Check and handle possible errors during execution.
+* Organize a project into independent functions with a common contract.
+* Handle signed, unsigned and hexadecimal representations, including edge cases like `INT_MIN`.
+* Work with pointers and dynamically allocated memory without leaks.
+* Propagate errors through several layers of functions.
 * Build and link a static library.
 
 The most challenging part for me was understanding and correctly using `va_list` and the mechanisms surrounding variadic arguments.
@@ -233,23 +229,20 @@ The most challenging part for me was understanding and correctly using `va_list`
 
 ## AI Usage
 
-I used AI during this project primarily as a didactic tool.
+I used AI during this project as a tutor. I asked it to follow strict rules: explain concepts and give only function prototypes and expected behaviour, and review my code by pointing out the line of each error and why it was wrong, without giving me the fix.
 
-My use of AI was focused mainly on:
+With that approach, I used AI to:
 
-* Resolving specific doubts about `va_list` and variadic functions.
-* Understanding how variadic arguments work in C.
-* Clarifying isolated concepts that I did not fully understand.
-* Checking specific errors or behaviours in particular situations.
-* Reviewing code that I had already written in order to better understand possible problems.
+* Understand `va_list`, variadic arguments and argument promotions.
+* Understand the expected behaviour and edge cases of each conversion.
+* Review the functions I wrote, locating errors such as lost `write()` return values, memory leaks and out-of-bounds writes, which I then fixed myself.
 
-I did not use AI to generate the implementation of the project.
+Because I needed to submit the project on time, in two specific places I explicitly asked the AI for the corrected code:
 
-**100% of the project code was written by me.**
+* The final index logic of the loop in `ft_printf()` (moving to the character after `%` and not skipping the terminating `\0`).
+* Moving the hexadecimal digit count into `ft_hexlen()` so that `ft_xtoa()` fits the 25-line limit.
 
-The purpose of using AI was to support my understanding of the concepts and help me identify and understand errors, rather than to obtain a finished solution.
-
-This approach was especially useful when working with variadic functions, since understanding how `va_list` behaves was one of the main challenges of the project.
+I reviewed and understood both changes before including them. The rest of the code was written by me.
 
 ---
 
@@ -261,13 +254,11 @@ This approach was especially useful when working with variadic functions, since 
 * `stdarg(3)` — documentation for variadic argument handling.
 * C standard library documentation.
 * 42 ft_printf subject — Version 12.0.
-* My previous Libft implementation and its associated functions.
+* My previous Libft implementation.
 
 ### AI
 
-I used AI as a learning and debugging aid, mainly to understand variadic functions, `va_list`, and specific errors encountered during development.
-
-I did not use AI-generated code in the final implementation.
+Used as a tutor and code reviewer during development, as described in [AI Usage](#ai-usage).
 
 ---
 
@@ -313,6 +304,7 @@ No he implementado la parte bonus opcional del proyecto.
 * [Descripción](#descripción)
 * [Referencia de funciones](#referencia-de-funciones)
 * [Algoritmo y estructura de datos](#algoritmo-y-estructura-de-datos)
+* [Decisiones técnicas](#decisiones-técnicas)
 * [Estructura del proyecto](#estructura-del-proyecto)
 * [Instrucciones](#instrucciones)
 * [Uso de ft_printf](#uso-de-ft_printf)
@@ -340,40 +332,51 @@ No he implementado la parte bonus opcional del proyecto.
 | Hexadecimal | `%X`        | Imprime un entero en hexadecimal utilizando letras mayúsculas.                                           |
 | Formato     | `%%`        | Imprime el carácter `%`.                                                                                 |
 
-### Funciones auxiliares
+### Funciones internas
 
-He separado las diferentes operaciones de conversión y salida en funciones auxiliares en lugar de concentrar toda la implementación dentro de `ft_printf()`.
-
-El proyecto también reutiliza funciones de mi implementación de Libft cuando es necesario.
-
-Entre las funcionalidades internas se encuentran:
-
-* Selección de la conversión correspondiente.
-* Escritura de caracteres y cadenas.
-* Gestión de enteros con y sin signo.
-* Conversión decimal y hexadecimal.
-* Formateo de punteros.
-* Reserva y liberación de memoria para las cadenas generadas.
+| Función              | Archivo             | Función que cumple                                                                              |
+| -------------------- | ------------------- | ----------------------------------------------------------------------------------------------- |
+| `ft_format_selector` | `ft_printf.c`       | Recibe el carácter que sigue al `%` y llama al handler correspondiente.                         |
+| `ft_handle_p`        | `ft_printf.c`       | Imprime un puntero como `0x` + hexadecimal en minúsculas, o `(nil)` si es `NULL`.               |
+| `ft_handle_c`        | `ft_printf_utils.c` | Imprime un carácter (incluido `\0`).                                                            |
+| `ft_handle_s`        | `ft_printf_utils.c` | Imprime una cadena, o `(null)` si es `NULL`.                                                    |
+| `ft_handle_d`        | `ft_printf_utils.c` | Imprime un entero con signo usando `ft_itoa` de mi Libft. Se usa para `%d` y para `%i`.         |
+| `ft_handle_u`        | `ft_printf_utils.c` | Imprime un entero sin signo usando `ft_utoa`.                                                   |
+| `ft_handle_x`        | `ft_printf_utils.c` | Imprime un número en hexadecimal; un parámetro elige minúsculas (`%x`) o mayúsculas (`%X`).     |
+| `ft_utoa`            | `ft_toas.c`         | Convierte un `unsigned int` en una cadena decimal reservada dinámicamente.                      |
+| `ft_xtoa`            | `ft_toas.c`         | Convierte un `unsigned long` en una cadena hexadecimal reservada dinámicamente.                 |
+| `ft_hexlen`          | `ft_toas.c`         | Devuelve el número de dígitos hexadecimales de un número.                                       |
+| `ft_handle_percent`  | `ft_toas.c`         | Imprime `%`. No consume ningún argumento variádico.                                             |
 
 ---
 
 ## Algoritmo y estructura de datos
 
-La implementación se basa principalmente en un algoritmo de análisis secuencial de la cadena de formato.
+La implementación se basa en un algoritmo de análisis secuencial con un selector de conversiones.
 
-`ft_printf()` recorre la cadena de formato carácter por carácter. Los caracteres normales se escriben directamente en la salida. Cuando encuentra un `%`, interpreta el carácter siguiente como un especificador de conversión.
+`ft_printf()` recorre la cadena de formato carácter por carácter. Los caracteres normales se escriben directamente en la salida. Cuando encuentra un `%`, el índice avanza al carácter siguiente, que se interpreta como especificador de conversión y se pasa a `ft_format_selector()`.
 
-Ese especificador se pasa a un selector de formato, que determina qué operación debe realizarse. Cada conversión se gestiona de manera independiente, manteniendo separadas las diferentes partes de la implementación y facilitando su comprensión y mantenimiento.
+El selector solo recibe ese carácter, no la cadena completa. Así, toda la lógica del índice vive dentro de `ft_printf()` y solo hay un lugar donde se mueve la posición en la cadena de formato.
 
-Para las conversiones que necesitan recibir argumentos, utilizo el mecanismo `va_list` proporcionado por `<stdarg.h>`. El argumento se obtiene mediante `va_arg()` utilizando el tipo correspondiente y posteriormente se procesa mediante la función encargada de esa conversión.
+El selector llama a un handler por conversión. Todos los handlers siguen el mismo contrato: extraen su argumento con `va_arg()`, escriben la salida con `write()` y devuelven el número de caracteres escritos, o `-1` si algo ha fallado. Como todos devuelven el mismo tipo de valor, `ft_printf()` comprueba los errores en un único punto después de cada paso y, si no hay error, suma el resultado al total.
 
-En las conversiones numéricas, el valor se transforma a la representación necesaria antes de escribirlo. Las conversiones decimal y hexadecimal utilizan funciones auxiliares específicas, mientras que los punteros se representan como direcciones en hexadecimal.
+En las conversiones numéricas, el valor se convierte primero en una cadena reservada dinámicamente (`ft_itoa`, `ft_utoa` o `ft_xtoa`) y después se escribe con una sola llamada a `write()`.
 
-El proyecto no necesita una estructura de datos compleja. Las principales estructuras utilizadas son la propia cadena de formato, el objeto `va_list` empleado para acceder a los argumentos variables y las cadenas de caracteres reservadas dinámicamente cuando una conversión las necesita.
+El proyecto no necesita una estructura de datos compleja. Los elementos principales son la cadena de formato, el objeto `va_list` que da acceso a los argumentos variables y las cadenas temporales que reservan las conversiones numéricas.
 
-Elegí este enfoque porque el problema se basa naturalmente en la relación entre una cadena de formato y un número variable de argumentos. Separar el análisis de la cadena, la selección de la conversión y las operaciones individuales de salida permite mantener cada parte del código independiente.
+Elegí este enfoque porque separa tres responsabilidades: recorrer la cadena de formato, elegir la conversión y producir la salida de cada una. Cada parte puede entenderse, probarse y modificarse por separado.
 
-Esta organización también facilita una posible ampliación de la función, ya que nuevas conversiones podrían integrarse en el selector y disponer de su propia lógica sin tener que modificar completamente el sistema de análisis.
+---
+
+## Decisiones técnicas
+
+* **Los handlers reciben `va_list *` en lugar de `va_list`.** Si se pasa un `va_list` por valor a una función que usa `va_arg()` sobre él, el estándar de C deja la copia del llamador en un estado indeterminado. En Linux x86_64 funciona por casualidad, porque `va_list` es un array, pero no es portable. Pasar un puntero garantiza que todos los handlers avanzan el mismo `va_list`, el de `ft_printf()`.
+* **Propagación de errores.** Se comprueba cada llamada a `write()` y a funciones que reservan memoria. Un fallo devuelve `-1`, que se propaga hasta `ft_printf()`. Allí se llama a `va_end()` y se devuelve `-1`, como hace el `printf()` original. Un retorno de `0` no es un error (por ejemplo, `%s` con una cadena vacía).
+* **`%c` lee un `int`.** Un `char` pasado a una función variádica se promociona a `int`, así que el handler pide un `int` a `va_arg()` y lo convierte a `unsigned char`.
+* **`%d` y `%i` comparten handler**, porque en `printf()` producen la misma salida.
+* **`ft_xtoa` usa `unsigned long`.** La misma conversión la comparten `%x`, `%X` y `%p`. `%x` recibe un `unsigned int` de 32 bits, pero un puntero en Linux x86_64 ocupa 64 bits, así que la conversión usa el tipo más ancho para no truncar las direcciones.
+* **Valores `NULL`**: siguen a glibc. `%s` imprime `(null)` y `%p` imprime `(nil)`.
+* **Especificadores desconocidos y `%` al final.** El estándar de C los define como comportamiento indefinido. Mi selector devuelve `0` para cualquier carácter desconocido: no imprime nada y no lo trata como error. Cuando el `%` es el último carácter, el índice se detiene sobre el `\0` final en lugar de saltárselo, así que el bucle nunca lee fuera de la cadena.
 
 ---
 
@@ -382,18 +385,25 @@ Esta organización también facilita una posible ampliación de la función, ya 
 ```text
 ft_printf/
 ├── Makefile
+├── README.md
 ├── ft_printf.h
 ├── ft_printf.c
-├── ft_format_selector.c
-├── ft_utoa.c
-├── ft_xtoa.c
+├── ft_printf_utils.c
+├── ft_toas.c
 └── libft/
-    └── ...
+    ├── Makefile
+    ├── libft.h
+    └── ft_*.c
 ```
 
-El proyecto utiliza mi implementación de Libft como dependencia de `ft_printf`. El código de Libft no está incluido en este archivo comprimido, pero sí está incluido y correctamente configurado en la entrega del proyecto.
+| Archivo             | Contenido                                                            |
+| ------------------- | -------------------------------------------------------------------- |
+| `ft_printf.c`       | `ft_printf`, `ft_format_selector` y `ft_handle_p`.                   |
+| `ft_printf_utils.c` | Handlers de `%c`, `%s`, `%d`/`%i`, `%u` y `%x`/`%X`.                 |
+| `ft_toas.c`         | Conversiones de número a cadena, `ft_hexlen` y el handler de `%%`.   |
+| `ft_printf.h`       | Prototipos e includes.                                               |
 
-La implementación está dividida en varios archivos para mantener separadas la lógica principal de impresión, la selección de conversiones y las conversiones numéricas.
+El proyecto utiliza mi Libft, que está incluida en el directorio `libft/` con sus archivos fuente y su propio Makefile. El Makefile principal compila primero Libft y después añade los objetos de `ft_printf` a la misma librería.
 
 ---
 
@@ -407,7 +417,7 @@ Para compilar el proyecto:
 make
 ```
 
-Esto genera:
+Esto compila primero `libft/libft.a` y después genera:
 
 ```text
 libftprintf.a
@@ -421,89 +431,64 @@ El Makefile utiliza:
 cc -Wall -Wextra -Werror
 ```
 
-y contiene las reglas requeridas:
-
-```bash
-make
-make clean
-make fclean
-make re
-```
-
-La librería estática se genera utilizando `ar`, tal y como requiere el subject.
+La librería estática se genera con `ar`, tal y como requiere el subject. Ejecutar `make` por segunda vez no recompila ni reenlaza nada.
 
 ### Reglas del Makefile
 
-| Regla    | Descripción                                          |
-| -------- | ---------------------------------------------------- |
-| `all`    | Compila `libftprintf.a`.                             |
-| `clean`  | Elimina los archivos objeto.                         |
-| `fclean` | Elimina los archivos objeto y la librería compilada. |
-| `re`     | Limpia el proyecto y vuelve a compilarlo.            |
+| Regla    | Descripción                                                       |
+| -------- | ----------------------------------------------------------------- |
+| `all`    | Compila Libft y `libftprintf.a`.                                  |
+| `clean`  | Elimina los archivos objeto (incluidos los de Libft).             |
+| `fclean` | Elimina los archivos objeto y las librerías compiladas.           |
+| `re`     | Limpia el proyecto y vuelve a compilarlo.                         |
 
 ---
 
 ## Uso de ft_printf
 
-Una vez compilado el proyecto, `libftprintf.a` puede enlazarse con otro proyecto de C.
-
-Por ejemplo:
+Una vez compilado el proyecto, `libftprintf.a` puede enlazarse con otro proyecto de C:
 
 ```bash
 cc main.c -L. -lftprintf
 ```
 
-El header correspondiente debe incluirse en el código:
+El header debe incluirse en el código:
 
 ```c
 #include "ft_printf.h"
 ```
 
-De esta forma, `ft_printf()` puede utilizarse desde otros proyectos como una función de una librería estática.
-
 ---
 
 ## Calidad y validación
 
-He validado la implementación mediante diferentes comprobaciones durante el desarrollo.
-
-* Norminette
-* Tester de Tripouille
-* Tester de sfabi28
-* Compilación con `-Wall -Wextra -Werror`
-* Comprobaciones de memory leaks
-* Comparación de las conversiones implementadas con el comportamiento esperado del `printf()` original
-
-La implementación incluye todas las conversiones obligatorias del subject y no incluye las funcionalidades opcionales del bonus.
+* Norminette sobre todos los archivos fuente y headers.
+* Compilación con `-Wall -Wextra -Werror`.
+* Tester de Tripouille.
+* Tester de sfabi28.
+* Salida y valor de retorno comparados con el `printf()` original en casos límite: `%c` con `0`, `%s` con `NULL` y `""`, `INT_MIN`/`INT_MAX`, `%u` y `%x` con `-1`, `%p` con `NULL` y con la dirección máxima.
+* Fallo de `write()`: con la salida estándar cerrada (`./a.out >&-`), `ft_printf()` devuelve `-1`.
+* Memory leaks comprobados con `valgrind --leak-check=full`.
 
 ---
 
 ## Gestión de memoria
 
-Algunas conversiones necesitan memoria dinámica, especialmente cuando los valores numéricos se convierten en cadenas de caracteres.
-
-Me he asegurado de liberar la memoria reservada cuando deja de ser necesaria. También he realizado comprobaciones de memoria durante las pruebas para detectar posibles leaks.
-
-De esta forma, la implementación cumple los requisitos de gestión de memoria establecidos por el currículo de 42.
+`%d`, `%u`, `%x`, `%X` y `%p` utilizan cadenas reservadas dinámicamente. Cada handler las libera en todos los caminos de salida, tanto si `write()` funciona como si falla. Si una reserva falla, el handler libera lo que ya hubiera reservado y devuelve `-1`.
 
 ---
 
 ## Qué he aprendido
 
-El principal concepto que he aprendido durante este proyecto ha sido el funcionamiento de las funciones variádicas en C.
-
-He aprendido a utilizar `va_list`, `va_start`, `va_arg` y `va_end` para crear una función capaz de recibir un número indeterminado de argumentos.
-
-También he aprendido cómo el tipo y el significado de cada argumento pueden depender de la información contenida en otro argumento, en este caso la cadena de formato.
+El principal concepto que he aprendido con este proyecto ha sido el funcionamiento de las funciones variádicas en C: cómo usar `va_list`, `va_start`, `va_arg` y `va_end`, cómo afecta la promoción de argumentos al tipo que se pide a `va_arg`, y por qué un `va_list` debe pasarse por puntero cuando varias funciones lo comparten.
 
 Además de las funciones variádicas, el proyecto me ha permitido mejorar en:
 
 * Análisis y procesamiento de cadenas de formato.
-* Organización de un proyecto mediante funciones independientes.
-* Gestión de diferentes representaciones numéricas.
-* Uso de punteros y memoria dinámica.
-* Separación entre lógica de conversión y salida.
-* Comprobación y gestión de errores.
+* Organización de un proyecto en funciones independientes con un contrato común.
+* Gestión de representaciones con signo, sin signo y hexadecimales, incluidos casos límite como `INT_MIN`.
+* Uso de punteros y memoria dinámica sin leaks.
+* Propagación de errores a través de varias capas de funciones.
 * Creación y enlazado de librerías estáticas.
 
 La parte que más me costó fue comprender y utilizar correctamente `va_list` y todo el mecanismo relacionado con los argumentos variádicos.
@@ -512,23 +497,20 @@ La parte que más me costó fue comprender y utilizar correctamente `va_list` y 
 
 ## Uso de IA
 
-He utilizado IA durante este proyecto principalmente como una herramienta didáctica.
+He utilizado la IA durante este proyecto como tutor. Le pedí que siguiera reglas estrictas: explicarme conceptos y darme solo prototipos y el comportamiento esperado de cada función, y revisar mi código indicándome la línea de cada error y por qué fallaba, sin darme la solución.
 
-Mi uso de IA se ha centrado principalmente en:
+Con ese enfoque, la he usado para:
 
-* Resolver dudas concretas sobre `va_list` y las funciones variádicas.
-* Comprender cómo funcionan los argumentos variádicos en C.
-* Aclarar conceptos aislados que no terminaba de comprender.
-* Comprobar errores o comportamientos concretos en situaciones específicas.
-* Revisar código que yo ya había escrito para comprender mejor posibles problemas.
+* Comprender `va_list`, los argumentos variádicos y la promoción de argumentos.
+* Entender el comportamiento esperado y los casos límite de cada conversión.
+* Revisar las funciones que yo escribía, localizando errores como retornos de `write()` perdidos, memory leaks o escrituras fuera de memoria, que después corregía yo.
 
-No he utilizado IA para generar la implementación del proyecto.
+Como necesitaba entregar el proyecto a tiempo, en dos puntos concretos le pedí explícitamente el código corregido:
 
-**El 100% del código del proyecto ha sido escrito por mí.**
+* La lógica final del índice en el bucle de `ft_printf()` (avanzar al carácter que sigue al `%` y no saltarse el `\0` final).
+* Mover el conteo de dígitos hexadecimales a `ft_hexlen()` para que `ft_xtoa()` cumpla el límite de 25 líneas.
 
-El objetivo del uso de IA ha sido apoyar mi comprensión de los conceptos y ayudarme a identificar y entender errores, no obtener una solución terminada.
-
-Este enfoque me resultó especialmente útil al trabajar con las funciones variádicas, ya que comprender correctamente el funcionamiento de `va_list` fue uno de los principales retos del proyecto.
+Revisé y comprendí ambos cambios antes de incluirlos. El resto del código lo he escrito yo.
 
 ---
 
@@ -537,16 +519,14 @@ Este enfoque me resultó especialmente útil al trabajar con las funciones vari�
 ### Documentación y referencias
 
 * `printf(3)` — documentación del manual de Linux.
-* `stdarg(3)` — documentación relacionada con los argumentos variádicos.
+* `stdarg(3)` — documentación sobre los argumentos variádicos.
 * Documentación de la biblioteca estándar de C.
 * Subject de `ft_printf` de 42 — versión 12.0.
-* Mi implementación anterior de Libft y sus funciones asociadas.
+* Mi implementación anterior de Libft.
 
 ### IA
 
-He utilizado IA como herramienta de aprendizaje y apoyo durante la depuración, principalmente para comprender las funciones variádicas, `va_list` y errores concretos encontrados durante el desarrollo.
-
-No he incorporado código generado por IA a la implementación final.
+Utilizada como tutor y revisor de código durante el desarrollo, tal y como se describe en [Uso de IA](#uso-de-ia).
 
 ---
 
