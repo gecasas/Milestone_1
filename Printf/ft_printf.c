@@ -17,6 +17,7 @@ int	ft_printf(char const *format, ...)
 	va_list	args;
 	int		count;
 	int		i;
+	int		checker;
 
 	va_start(args, format);
 	count = 0;
@@ -24,9 +25,17 @@ int	ft_printf(char const *format, ...)
 	while (format[i] != '\0')
 	{
 		if (format [i] == '%')
+			checker = ft_format_selector(format[++i], &args);
+		else
+			checker = write (1, &format[i], 1);
+		if (checker < 0)
 		{
-			count += ft_format_selector(&format[i + 1], args);
+			va_end (args);
+			return (-1);
 		}
+		count += checker;
+		if (format[i] != '\0')
+			i++;
 	}
 	va_end(args);
 	return (count);

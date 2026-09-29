@@ -44,17 +44,13 @@ char	*ft_xtoa(unsigned long x, int upper)
 {
 	char			*str;
 	char			*hex;
-	unsigned long	tmp;
 	int				count;
 
 	if (upper == 1)
 		hex = "0123456789ABCDEF";
 	else
 		hex = "0123456789abcdef";
-	tmp = x;
-	count = 1;
-	while (tmp /= 16)
-		count++;
+	count = ft_hexlen(x);
 	str = malloc(sizeof(char) * (count + 1));
 	if (!str)
 		return (NULL);
@@ -71,4 +67,17 @@ char	*ft_xtoa(unsigned long x, int upper)
 int	ft_handle_percent(void)
 {
 	return (write (1, "%", 1));
+}
+
+int	ft_hexlen(unsigned long x)
+{
+	int	count;
+
+	count = 1;
+	while (x >= 16)
+	{
+		x = x / 16;
+		count++;
+	}
+	return (count);
 }

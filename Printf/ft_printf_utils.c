@@ -74,4 +74,3 @@ int	ft_handle_x(va_list *args, int upper)
 	free (str);
 	return (count);
 }
-
