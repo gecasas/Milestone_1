@@ -6,7 +6,7 @@
 /*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/27 16:07:09 by gecasas           #+#    #+#             */
-/*   Updated: 2026/09/27 18:01:00 by gecasas          ###   ########.fr       */
+/*   Updated: 2026/09/30 18:20:20 by gecasas          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 # include <stdarg.h>
 
 int		ft_printf(char const *format, ...);
+int		ft_parse_format(char const *format, va_list *args);
 int		ft_format_selector(char c, va_list *args);
 int		ft_handle_c(va_list *args);
 int		ft_handle_s(va_list *args);
