@@ -61,28 +61,3 @@ int	ft_format_selector(char c, va_list *args)
 		return (ft_handle_percent());
 	return (0);
 }
-
-int	ft_handle_p(va_list *args)
-{
-	char			*str;
-	char			*res;
-	int				count;
-	unsigned long	p;
-
-	p = (unsigned long)va_arg(*args, void *);
-	if (!p)
-		return (write (1, "(nil)", 5));
-	str = ft_xtoa(p, 0);
-	if (!str)
-		return (-1);
-	res = ft_strjoin("0x", str);
-	if (!res)
-	{
-		free (str);
-		return (-1);
-	}
-	count = write (1, res, ft_strlen(res));
-	free (str);
-	free (res);
-	return (count);
-}
