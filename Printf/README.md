@@ -68,6 +68,7 @@ I did not implement the optional bonus part of the project.
 
 | Function             | File                | Role                                                                                   |
 | -------------------- | ------------------- | -------------------------------------------------------------------------------------- |
+| `ft_parse_format`    | `ft_printf.c`       | Walks the format string, prints text and conversions, and returns the total or `-1`.   |
 | `ft_format_selector` | `ft_printf.c`       | Receives the character after `%` and calls the matching handler.                       |
 | `ft_handle_p`        | `ft_printf.c`       | Prints a pointer as `0x` + lowercase hexadecimal, or `(nil)` for `NULL`.               |
 | `ft_handle_c`        | `ft_printf_utils.c` | Prints one character (including `\0`).                                                 |
@@ -86,11 +87,13 @@ I did not implement the optional bonus part of the project.
 
 The core of my implementation is a sequential parsing algorithm with a dispatcher.
 
-`ft_printf()` traverses the format string character by character. Normal characters are written directly to the output. When a `%` character is found, the index moves to the next character, which is interpreted as a conversion specifier and passed to `ft_format_selector()`.
+`ft_printf()` only checks that the format is not `NULL`, starts the `va_list`, delegates the work to `ft_parse_format()` and closes the `va_list` with `va_end()`.
 
-The selector only receives that single character, not the whole string. This keeps all the index logic inside `ft_printf()`, so there is only one place where the position in the format string is moved.
+`ft_parse_format()` traverses the format string character by character. Normal characters are written directly to the output. When a `%` character is found, the index moves to the next character, which is interpreted as a conversion specifier and passed to `ft_format_selector()`.
 
-The selector calls one handler per conversion. Every handler follows the same contract: it extracts its argument with `va_arg()`, writes the output with `write()`, and returns the number of characters written, or `-1` if something failed. Because all handlers return the same kind of value, `ft_printf()` can check for errors in a single place after each step, and add the result to the total count otherwise.
+The selector only receives that single character, not the whole string. This keeps all the index logic inside `ft_parse_format()`, so there is only one place where the position in the format string is moved.
+
+The selector calls one handler per conversion. Every handler follows the same contract: it extracts its argument with `va_arg()`, writes the output with `write()`, and returns the number of characters written, or `-1` if something failed. Because all handlers return the same kind of value, `ft_parse_format()` can check for errors in a single place after each step, and add the result to the total count otherwise.
 
 For numerical conversions, the value is first converted into a dynamically allocated string (`ft_itoa`, `ft_utoa` or `ft_xtoa`) and then written with a single `write()` call.
 
@@ -103,7 +106,8 @@ I chose this approach because it separates three responsibilities: walking the f
 ## Technical Decisions
 
 * **Handlers receive `va_list *` instead of `va_list`.** If a `va_list` is passed by value to a function that calls `va_arg()` on it, the C standard leaves the caller's copy in an indeterminate state. It happens to work on Linux x86_64, where `va_list` is an array, but it is not portable. Passing a pointer guarantees that every handler advances the same `va_list` owned by `ft_printf()`.
-* **Error propagation.** Every call to `write()` or to a function that allocates memory is checked. A failure returns `-1`, which is propagated up to `ft_printf()`. `ft_printf()` then calls `va_end()` and returns `-1`, like the original `printf()`. A return of `0` is not an error (for example, `%s` with an empty string).
+* **Error propagation.** Every call to `write()` or to a function that allocates memory is checked. A failure returns `-1`, which is propagated up through `ft_parse_format()` to `ft_printf()`, which returns `-1` like the original `printf()`. `va_end()` is called in a single place, in `ft_printf()`, on both the success and the error path. A return of `0` is not an error (for example, `%s` with an empty string).
+* **`NULL` format.** The C standard does not allow a `NULL` format, but glibc does not crash: `printf(NULL)` prints nothing and returns `-1`. `ft_printf()` does the same, checking the format before calling `va_start()`, so no `va_end()` is needed on that path.
 * **`%c` reads an `int`.** A `char` passed to a variadic function is promoted to `int`, so the handler asks `va_arg()` for an `int` and converts it to `unsigned char`.
 * **`%d` and `%i` share one handler**, because they produce the same output in `printf()`.
 * **`ft_xtoa` uses `unsigned long`.** The same conversion is shared by `%x`, `%X` and `%p`. `%x` receives a 32-bit `unsigned int`, but a pointer on Linux x86_64 is 64 bits, so the conversion uses the wider type to avoid truncating addresses.
@@ -130,7 +134,7 @@ ft_printf/
 
 | File                | Contents                                                        |
 | ------------------- | --------------------------------------------------------------- |
-| `ft_printf.c`       | `ft_printf`, `ft_format_selector` and `ft_handle_p`.            |
+| `ft_printf.c`       | `ft_printf`, `ft_parse_format`, `ft_format_selector` and `ft_handle_p`. |
 | `ft_printf_utils.c` | Handlers for `%c`, `%s`, `%d`/`%i`, `%u` and `%x`/`%X`.         |
 | `ft_toas.c`         | Number-to-string conversions, `ft_hexlen` and the `%%` handler. |
 | `ft_printf.h`       | Prototypes and includes.                                        |
@@ -197,8 +201,8 @@ The header must also be included in the source file:
 * Norminette on all source and header files.
 * Compilation with `-Wall -Wextra -Werror`.
 * Tripouille tester.
-* sfabi28 tester.
-* Output and return value compared with the original `printf()` for edge cases: `%c` with `0`, `%s` with `NULL` and `""`, `INT_MIN`/`INT_MAX`, `%u` and `%x` with `-1`, `%p` with `NULL` and with the maximum address.
+* sfabi28 tester (all 161 mandatory tests, including `ft_printf(NULL)`).
+* Output and return value compared with the original `printf()` for edge cases: `%c` with `0`, `%s` with `NULL` and `""`, `INT_MIN`/`INT_MAX`, `%u` and `%x` with `-1`, `%p` with `NULL` and with the maximum address, and a `NULL` format.
 * `write()` failure: with standard output closed (`./a.out >&-`), `ft_printf()` returns `-1`.
 * Memory leaks checked with `valgrind --leak-check=full`.
 
@@ -237,12 +241,8 @@ With that approach, I used AI to:
 * Understand the expected behaviour and edge cases of each conversion.
 * Review the functions I wrote, locating errors such as lost `write()` return values, memory leaks and out-of-bounds writes, which I then fixed myself.
 
-Because I needed to submit the project on time, in two specific places I explicitly asked the AI for the corrected code:
+100% of the code has been written by me, and its ussage has been only didactic.
 
-* The final index logic of the loop in `ft_printf()` (moving to the character after `%` and not skipping the terminating `\0`).
-* Moving the hexadecimal digit count into `ft_hexlen()` so that `ft_xtoa()` fits the 25-line limit.
-
-I reviewed and understood both changes before including them. The rest of the code was written by me.
 
 ---
 
@@ -336,6 +336,7 @@ No he implementado la parte bonus opcional del proyecto.
 
 | Función              | Archivo             | Función que cumple                                                                              |
 | -------------------- | ------------------- | ----------------------------------------------------------------------------------------------- |
+| `ft_parse_format`    | `ft_printf.c`       | Recorre la cadena de formato, imprime texto y conversiones y devuelve el total o `-1`.          |
 | `ft_format_selector` | `ft_printf.c`       | Recibe el carácter que sigue al `%` y llama al handler correspondiente.                         |
 | `ft_handle_p`        | `ft_printf.c`       | Imprime un puntero como `0x` + hexadecimal en minúsculas, o `(nil)` si es `NULL`.               |
 | `ft_handle_c`        | `ft_printf_utils.c` | Imprime un carácter (incluido `\0`).                                                            |
@@ -354,11 +355,13 @@ No he implementado la parte bonus opcional del proyecto.
 
 La implementación se basa en un algoritmo de análisis secuencial con un selector de conversiones.
 
-`ft_printf()` recorre la cadena de formato carácter por carácter. Los caracteres normales se escriben directamente en la salida. Cuando encuentra un `%`, el índice avanza al carácter siguiente, que se interpreta como especificador de conversión y se pasa a `ft_format_selector()`.
+`ft_printf()` solo comprueba que el formato no sea `NULL`, inicia el `va_list`, delega el trabajo en `ft_parse_format()` y cierra el `va_list` con `va_end()`.
 
-El selector solo recibe ese carácter, no la cadena completa. Así, toda la lógica del índice vive dentro de `ft_printf()` y solo hay un lugar donde se mueve la posición en la cadena de formato.
+`ft_parse_format()` recorre la cadena de formato carácter por carácter. Los caracteres normales se escriben directamente en la salida. Cuando encuentra un `%`, el índice avanza al carácter siguiente, que se interpreta como especificador de conversión y se pasa a `ft_format_selector()`.
 
-El selector llama a un handler por conversión. Todos los handlers siguen el mismo contrato: extraen su argumento con `va_arg()`, escriben la salida con `write()` y devuelven el número de caracteres escritos, o `-1` si algo ha fallado. Como todos devuelven el mismo tipo de valor, `ft_printf()` comprueba los errores en un único punto después de cada paso y, si no hay error, suma el resultado al total.
+El selector solo recibe ese carácter, no la cadena completa. Así, toda la lógica del índice vive dentro de `ft_parse_format()` y solo hay un lugar donde se mueve la posición en la cadena de formato.
+
+El selector llama a un handler por conversión. Todos los handlers siguen el mismo contrato: extraen su argumento con `va_arg()`, escriben la salida con `write()` y devuelven el número de caracteres escritos, o `-1` si algo ha fallado. Como todos devuelven el mismo tipo de valor, `ft_parse_format()` comprueba los errores en un único punto después de cada paso y, si no hay error, suma el resultado al total.
 
 En las conversiones numéricas, el valor se convierte primero en una cadena reservada dinámicamente (`ft_itoa`, `ft_utoa` o `ft_xtoa`) y después se escribe con una sola llamada a `write()`.
 
@@ -371,7 +374,8 @@ Elegí este enfoque porque separa tres responsabilidades: recorrer la cadena de 
 ## Decisiones técnicas
 
 * **Los handlers reciben `va_list *` en lugar de `va_list`.** Si se pasa un `va_list` por valor a una función que usa `va_arg()` sobre él, el estándar de C deja la copia del llamador en un estado indeterminado. En Linux x86_64 funciona por casualidad, porque `va_list` es un array, pero no es portable. Pasar un puntero garantiza que todos los handlers avanzan el mismo `va_list`, el de `ft_printf()`.
-* **Propagación de errores.** Se comprueba cada llamada a `write()` y a funciones que reservan memoria. Un fallo devuelve `-1`, que se propaga hasta `ft_printf()`. Allí se llama a `va_end()` y se devuelve `-1`, como hace el `printf()` original. Un retorno de `0` no es un error (por ejemplo, `%s` con una cadena vacía).
+* **Propagación de errores.** Se comprueba cada llamada a `write()` y a funciones que reservan memoria. Un fallo devuelve `-1`, que se propaga a través de `ft_parse_format()` hasta `ft_printf()`, que devuelve `-1` como hace el `printf()` original. `va_end()` se llama en un único sitio, en `ft_printf()`, tanto en el camino de éxito como en el de error. Un retorno de `0` no es un error (por ejemplo, `%s` con una cadena vacía).
+* **Formato `NULL`.** El estándar de C no permite un formato `NULL`, pero glibc no crashea: `printf(NULL)` no imprime nada y devuelve `-1`. `ft_printf()` hace lo mismo, comprobando el formato antes de llamar a `va_start()`, así que en ese camino no hace falta `va_end()`.
 * **`%c` lee un `int`.** Un `char` pasado a una función variádica se promociona a `int`, así que el handler pide un `int` a `va_arg()` y lo convierte a `unsigned char`.
 * **`%d` y `%i` comparten handler**, porque en `printf()` producen la misma salida.
 * **`ft_xtoa` usa `unsigned long`.** La misma conversión la comparten `%x`, `%X` y `%p`. `%x` recibe un `unsigned int` de 32 bits, pero un puntero en Linux x86_64 ocupa 64 bits, así que la conversión usa el tipo más ancho para no truncar las direcciones.
@@ -398,7 +402,7 @@ ft_printf/
 
 | Archivo             | Contenido                                                            |
 | ------------------- | -------------------------------------------------------------------- |
-| `ft_printf.c`       | `ft_printf`, `ft_format_selector` y `ft_handle_p`.                   |
+| `ft_printf.c`       | `ft_printf`, `ft_parse_format`, `ft_format_selector` y `ft_handle_p`. |
 | `ft_printf_utils.c` | Handlers de `%c`, `%s`, `%d`/`%i`, `%u` y `%x`/`%X`.                 |
 | `ft_toas.c`         | Conversiones de número a cadena, `ft_hexlen` y el handler de `%%`.   |
 | `ft_printf.h`       | Prototipos e includes.                                               |
@@ -465,8 +469,8 @@ El header debe incluirse en el código:
 * Norminette sobre todos los archivos fuente y headers.
 * Compilación con `-Wall -Wextra -Werror`.
 * Tester de Tripouille.
-* Tester de sfabi28.
-* Salida y valor de retorno comparados con el `printf()` original en casos límite: `%c` con `0`, `%s` con `NULL` y `""`, `INT_MIN`/`INT_MAX`, `%u` y `%x` con `-1`, `%p` con `NULL` y con la dirección máxima.
+* Tester de sfabi28 (las 161 pruebas obligatorias, incluida `ft_printf(NULL)`).
+* Salida y valor de retorno comparados con el `printf()` original en casos límite: `%c` con `0`, `%s` con `NULL` y `""`, `INT_MIN`/`INT_MAX`, `%u` y `%x` con `-1`, `%p` con `NULL` y con la dirección máxima, y un formato `NULL`.
 * Fallo de `write()`: con la salida estándar cerrada (`./a.out >&-`), `ft_printf()` devuelve `-1`.
 * Memory leaks comprobados con `valgrind --leak-check=full`.
 
@@ -505,12 +509,7 @@ Con ese enfoque, la he usado para:
 * Entender el comportamiento esperado y los casos límite de cada conversión.
 * Revisar las funciones que yo escribía, localizando errores como retornos de `write()` perdidos, memory leaks o escrituras fuera de memoria, que después corregía yo.
 
-Como necesitaba entregar el proyecto a tiempo, en dos puntos concretos le pedí explícitamente el código corregido:
-
-* La lógica final del índice en el bucle de `ft_printf()` (avanzar al carácter que sigue al `%` y no saltarse el `\0` final).
-* Mover el conteo de dígitos hexadecimales a `ft_hexlen()` para que `ft_xtoa()` cumpla el límite de 25 líneas.
-
-Revisé y comprendí ambos cambios antes de incluirlos. El resto del código lo he escrito yo.
+El 100% del código ha sido escrito por mí, y el uso de esta ha sido completamente didáctico.
 
 ---
 

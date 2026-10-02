@@ -6,7 +6,7 @@
 /*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/28 12:45:18 by gecasas           #+#    #+#             */
-/*   Updated: 2026/09/28 12:45:18 by gecasas          ###   ########.fr       */
+/*   Updated: 2026/09/30 18:10:16 by gecasas          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,7 @@ char	*ft_xtoa(unsigned long x, int upper)
 int	ft_hexlen(unsigned long x)
 {
 	int	count;
-	
+
 	count = 1;
 	while (x >= 16)
 	{
