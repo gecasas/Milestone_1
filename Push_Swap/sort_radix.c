@@ -1,42 +1,86 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   sort_radix.c                                       :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/10/15 18:56:04 by gecasas           #+#    #+#             */
+/*   Updated: 2026/10/15 19:41:35 by gecasas          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "push_swap.h"
 
-/*
-** Radix LSD en base 2 sobre los indices (0..n-1, todos >= 0).
-** Por cada bit: los que tienen ese bit a 0 van a b (pb),
-** los que lo tienen a 1 se quedan en a (ra). Luego todo vuelve con pa.
-** Si a queda ordenado antes de acabar los bits, se para.
-*/
-static void	radix_pass(t_stack **a, t_stack **b, int size, int bit)
+int	is_sorted(t_stack *stack)
 {
+	t_node	*node;
+	int		i;
+
+	if (!stack || stack->size < 2)
+		return (1);
+	node = stack->top;
+	i = 1;
+	while (i < stack->size)
+	{
+		if (node->value > node->next->value)
+			return (0);
+		node = node->next;
+		i++;
+	}
+	return (1);
+}
+
+static int	get_max_bits(int max)
+{
+	int	bits;
+
+	bits = 0;
+	while ((max >> bits) != 0)
+		bits++;
+	return (bits);
+}
+
+static void	radix_pass(t_stack *a, t_stack *b, t_move *move, int bit)
+{
+	int	size;
 	int	i;
 
+	size = a->size;
 	i = 0;
 	while (i < size)
 	{
-		if (((*a)->index >> bit) & 1)
+		if ((a->top->index >> bit) & 1)
+		{
 			ra(a);
+			move->ra_count++;
+		}
 		else
+		{
 			pb(a, b);
+			move->pb_count++;
+		}
 		i++;
 	}
-	while (*b)
+	while (b->size > 0)
+	{
 		pa(a, b);
+		move->pa_count++;
+	}
 }
 
-void	sort_radix(t_stack **a, t_stack **b)
+void	sort_radix(t_stack *a, t_stack *b, t_move *move)
 {
-	int	size;
 	int	bits;
 	int	bit;
 
-	size = stack_size(*a);
-	if (size < 2)
+	if (!a || !b || !move || a->size < 2)
 		return ;
-	bits = get_max_bits(size - 1);
+	bits = get_max_bits(a->size - 1);
 	bit = 0;
-	while (bit < bits && !is_sorted(*a))
+	while (bit < bits && !is_sorted(a))
 	{
-		radix_pass(a, b, size, bit);
+		radix_pass(a, b, move, bit);
 		bit++;
 	}
 }

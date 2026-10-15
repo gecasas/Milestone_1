@@ -1,77 +1,114 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   sort_chunks.c                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/10/15 18:56:15 by gecasas           #+#    #+#             */
+/*   Updated: 2026/10/15 19:42:00 by gecasas          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "push_swap.h"
 
-/*
-** Pasa a b todos los indices de [start, end).
-** Los de la mitad baja del chunk se mandan al fondo de b (rb),
-** asi b queda "medio ordenado" y la vuelta atras es mas barata.
-*/
-static void	push_chunk(t_stack **a, t_stack **b, int start, int end)
+static int	int_sqrt(int n)
 {
-	int	pushed;
+	int	root;
+
+	root = 1;
+	while ((root + 1) * (root + 1) <= n)
+		root++;
+	return (root);
+}
+
+static int	get_position(t_stack *stack, int index)
+{
+	t_node	*node;
+	int		pos;
+
+	node = stack->top;
+	pos = 0;
+	while (pos < stack->size)
+	{
+		if (node->index == index)
+			return (pos);
+		node = node->next;
+		pos++;
+	}
+	return (-1);
+}
+
+static void	push_chunk(t_stack *a, t_stack *b, t_move *move, int end)
+{
 	int	mid;
 
-	pushed = 0;
-	mid = start + (end - start) / 2;
-	while (pushed < end - start)
+	mid = b->size + (end - b->size) / 2;
+	while (b->size < end)
 	{
-		if ((*a)->index >= start && (*a)->index < end)
+		if (a->top->index < end)
 		{
 			pb(a, b);
-			if ((*b)->index < mid && (*b)->next)
+			move->pb_count++;
+			if (b->top->index < mid && b->size > 1)
+			{
 				rb(b);
-			pushed++;
+				move->rb_count++;
+			}
 		}
 		else
+		{
 			ra(a);
+			move->ra_count++;
+		}
 	}
 }
 
-/*
-** b contiene los indices 0..size-1, asi que el maximo es size - 1.
-** Se sube por el camino mas corto (rb o rrb) y se devuelve con pa.
-*/
-static void	push_back(t_stack **a, t_stack **b)
+static void	push_back(t_stack *a, t_stack *b, t_move *move)
 {
-	int	size;
 	int	pos;
 
-	while (*b)
+	while (b->size > 0)
 	{
-		size = stack_size(*b);
-		pos = get_position(*b, size - 1);
-		if (pos <= size / 2)
+		pos = get_position(b, b->size - 1);
+		if (pos <= b->size / 2)
 		{
 			while (pos-- > 0)
+			{
 				rb(b);
+				move->rb_count++;
+			}
 		}
 		else
 		{
-			while (pos++ < size)
+			while (pos++ < b->size)
+			{
 				rrb(b);
+				move->rrb_count++;
+			}
 		}
 		pa(a, b);
+		move->pa_count++;
 	}
 }
 
-void	sort_chunks(t_stack **a, t_stack **b)
+void	sort_chunks(t_stack *a, t_stack *b, t_move *move)
 {
 	int	size;
 	int	chunk;
-	int	start;
 	int	end;
 
-	size = stack_size(*a);
-	if (size < 2 || is_sorted(*a))
+	if (!a || !b || !move || a->size < 2 || is_sorted(a))
 		return ;
-	chunk = ft_sqrt(size);
-	start = 0;
-	while (start < size)
+	size = a->size;
+	chunk = int_sqrt(size);
+	end = 0;
+	while (end < size)
 	{
-		end = start + chunk;
+		end += chunk;
 		if (end > size)
 			end = size;
-		push_chunk(a, b, start, end);
-		start = end;
+		push_chunk(a, b, move, end);
 	}
-	push_back(a, b);
+	push_back(a, b, move);
 }

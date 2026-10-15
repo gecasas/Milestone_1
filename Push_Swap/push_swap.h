@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
-/*                                                       :::      ::::::::    */
-/*   push_swap.h                                       :+:      :+:    :+:    */
-/*                                                   +:+ +:+         +:+      */
-/*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
-/*                                               +#+#+#+#+#+   +#+            */
-/*   Created: 2026/10/06 11:47:38 by abarba-m         #+#    #+#              */
-/*   Updated: 2026/10/14 18:31:58 by abarba-m        ###   ########.fr        */
+/*                                                        :::      ::::::::   */
+/*   push_swap.h                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/10/06 11:47:38 by abarba-m          #+#    #+#             */
+/*   Updated: 2026/10/15 19:44:31 by gecasas          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,5 +83,8 @@ void	parser(t_stack *a, t_stack *b);
 
 //Algorithms
 void	bubble_sort(t_stack *a, t_move *ops);
+void	sort_radix(t_stack *a, t_stack *b, t_move *move);
+void	sort_chunks(t_stack *a, t_stack *b, t_move *move);
+int		is_sorted(t_stack *stack);
 
 #endif
