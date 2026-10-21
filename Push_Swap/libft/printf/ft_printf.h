@@ -6,7 +6,7 @@
 /*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
 /*                                               +#+#+#+#+#+   +#+            */
 /*   Created: 2026/09/27 15:47:13 by abarba-m         #+#    #+#              */
-/*   Updated: 2026/09/29 16:44:40 by abarba-m        ###   ########.fr        */
+/*   Updated: 2026/10/21 17:05:10 by abarba-m        ###   ########.fr        */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 
 //Libraries
 # include <stdarg.h>
-# include "Libft/libft.h"
+# include "../libft.h"
 
 //Functions
 int	ft_printf(char const *input, ...);

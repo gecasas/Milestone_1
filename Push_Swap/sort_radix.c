@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   sort_radix.c                                       :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/10/15 18:56:04 by gecasas           #+#    #+#             */
-/*   Updated: 2026/10/15 19:41:35 by gecasas          ###   ########.fr       */
+/*                                                       :::      ::::::::    */
+/*   sort_radix.c                                      :+:      :+:    :+:    */
+/*                                                   +:+ +:+         +:+      */
+/*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
+/*                                               +#+#+#+#+#+   +#+            */
+/*   Created: 2026/10/15 18:56:04 by abarba-m         #+#    #+#              */
+/*   Updated: 2026/10/21 16:24:34 by abarba-m        ###   ########.fr        */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,46 +41,46 @@ static int	get_max_bits(int max)
 	return (bits);
 }
 
-static void	radix_pass(t_stack *a, t_stack *b, t_move *move, int bit)
+static void	radix_pass(t_context *ctx, int bit)
 {
 	int	size;
 	int	i;
 
-	size = a->size;
+	size = ctx->a->size;
 	i = 0;
 	while (i < size)
 	{
-		if ((a->top->index >> bit) & 1)
+		if ((ctx->a->top->index >> bit) & 1)
 		{
-			ra(a);
-			move->ra_count++;
+			ra(ctx);
+			ctx->move->ra_count++;
 		}
 		else
 		{
-			pb(a, b);
-			move->pb_count++;
+			pb(ctx);
+			ctx->move->pb_count++;
 		}
 		i++;
 	}
-	while (b->size > 0)
+	while (ctx->b->size > 0)
 	{
-		pa(a, b);
-		move->pa_count++;
+		pa(ctx);
+		ctx->move->pa_count++;
 	}
 }
 
-void	sort_radix(t_stack *a, t_stack *b, t_move *move)
+void	sort_radix(t_context *ctx)
 {
 	int	bits;
 	int	bit;
 
-	if (!a || !b || !move || a->size < 2)
+	if (!ctx || !ctx->a || !ctx->b || !ctx->move || ctx->a->size < 2)
 		return ;
-	bits = get_max_bits(a->size - 1);
+	bits = get_max_bits(ctx->a->size - 1);
 	bit = 0;
-	while (bit < bits && !is_sorted(a))
+	while (bit < bits && !is_sorted(ctx->a))
 	{
-		radix_pass(a, b, move, bit);
+		radix_pass(ctx, bit);
 		bit++;
 	}
 }

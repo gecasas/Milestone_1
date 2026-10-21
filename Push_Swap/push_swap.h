@@ -6,14 +6,16 @@
 /*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/06 11:47:38 by abarba-m          #+#    #+#             */
-/*   Updated: 2026/10/15 19:44:31 by gecasas          ###   ########.fr       */
+/*   Updated: 2026/10/21 17:56:24 by gecasas          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef PUSH_SWAP_H
 # define PUSH_SWAP_H
 
-# include "Libft/libft.h"
+# include "libft/libft.h"
+# include "libft/printf/ft_printf.h"
+# include <stdio.h>
 
 typedef struct s_node
 {
@@ -44,14 +46,38 @@ typedef struct s_move
 	int	rrr_count;
 }	t_move;
 
+typedef enum e_algorithm
+{
+	ALGO_SIMPLE,
+	ALGO_MEDIUM,
+	ALGO_COMPLEX,
+	ALGO_ADAPTIVE
+}	t_algorithm;
+
 typedef struct s_context
 {
-	t_stack	*a;
-	t_stack	*b;
-	t_move	*move;
-	t_list	*instructions;
-	t_list	*instructions_tail;
+	t_stack		*a;
+	t_stack		*b;
+	t_move		*move;
+	t_list		*instructions;
+	t_list		*instructions_tail;
+	int			bench_mode;
+	t_algorithm	algorithm;
+	int			has_algorithm;
 }	t_context;
+
+//Flags and argument parsing
+int		is_sorted(t_stack *stack);
+void	append_instruction(t_context *ctx, char *op);
+void	print_bench_instructions(t_context *ctx);
+void	clear_instruction_list(t_context *ctx);
+
+//Algorithm functions
+float	compute_disorder(t_stack *a);
+void	parser(t_context *ctx);
+int		argparser(int argc, char **argv, t_stack *a);
+void	run_algorithm(t_algorithm algo, t_context *ctx);
+int		parse_algorithm(const char *arg, t_algorithm *algorithm);
 
 //Stack functions
 t_node	*new_node(int value);
@@ -59,32 +85,31 @@ void	stack_init(t_stack *stack);
 void	move_init(t_move *move);
 void	stack_add_back(t_stack *stack, t_node *node);
 void	stack_clear(t_stack *stack);
+void	stack_swap(t_stack *stack);
+void	stack_rotate(t_stack *stack);
+void	stack_reverse_rotate(t_stack *stack);
 
 //Stack operations
-void	sa(t_stack *a);
-void	sb(t_stack *b);
-void	ss(t_stack *a, t_stack *b);
-void	pa(t_stack *a, t_stack *b);
-void	pb(t_stack *a, t_stack *b);
-void	ra(t_stack *a);
-void	rb(t_stack *b);
-void	rr(t_stack *a, t_stack *b);
-void	rra(t_stack *a);
-void	rrb(t_stack *b);
-void	rrr(t_stack *a, t_stack *b);
+void	sa(t_context *ctx);
+void	sb(t_context *ctx);
+void	ss(t_context *ctx);
+void	pa(t_context *ctx);
+void	pb(t_context *ctx);
+void	ra(t_context *ctx);
+void	rb(t_context *ctx);
+void	rr(t_context *ctx);
+void	rra(t_context *ctx);
+void	rrb(t_context *ctx);
+void	rrr(t_context *ctx);
 
 //Push functions
 t_node	*stack_pop(t_stack *stack);
 void	stack_push(t_stack *stack, t_node *node);
 
-//Swap functions
-int		compute_disorder(t_stack *a, t_stack *b);
-void	parser(t_stack *a, t_stack *b);
-
 //Algorithms
-void	bubble_sort(t_stack *a, t_move *ops);
-void	sort_radix(t_stack *a, t_stack *b, t_move *move);
-void	sort_chunks(t_stack *a, t_stack *b, t_move *move);
+void	bubble_sort(t_context *ctx);
+void	sort_radix(t_context *ctx);
+void	sort_chunks(t_context *ctx);
 int		is_sorted(t_stack *stack);
 
 #endif

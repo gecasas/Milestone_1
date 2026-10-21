@@ -1,7 +1,7 @@
 NAME = libftprintf.a
 CC = cc
 CFLAGS = -Wall -Wextra -Werror
-CPPFLAGS = -I.
+CPPFLAGS = -I. -I..
 AR = ar
 ARFLAGS = rcs
 
@@ -14,10 +14,8 @@ all: $(NAME)
 $(NAME): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $^
 	
-%.o: %.c printf.h
+%.o: %.c ft_printf.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
-
-$(OBJS): $(SRCS:.c=.o)
 
 clean:
 	rm -f $(OBJS)

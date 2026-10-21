@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   sort_chunks.c                                      :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/10/15 18:56:15 by gecasas           #+#    #+#             */
-/*   Updated: 2026/10/15 19:42:00 by gecasas          ###   ########.fr       */
+/*                                                       :::      ::::::::    */
+/*   sort_chunks.c                                     :+:      :+:    :+:    */
+/*                                                   +:+ +:+         +:+      */
+/*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
+/*                                               +#+#+#+#+#+   +#+            */
+/*   Created: 2026/10/15 18:56:15 by abarba-m         #+#    #+#              */
+/*   Updated: 2026/10/21 15:48:02 by abarba-m        ###   ########.fr        */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,68 +39,68 @@ static int	get_position(t_stack *stack, int index)
 	return (-1);
 }
 
-static void	push_chunk(t_stack *a, t_stack *b, t_move *move, int end)
+static void	push_chunk(t_context *ctx, int end)
 {
 	int	mid;
 
-	mid = b->size + (end - b->size) / 2;
-	while (b->size < end)
+	mid = ctx->b->size + (end - ctx->b->size) / 2;
+	while (ctx->b->size < end)
 	{
-		if (a->top->index < end)
+		if (ctx->a->top->index < end)
 		{
-			pb(a, b);
-			move->pb_count++;
-			if (b->top->index < mid && b->size > 1)
+			pb(ctx);
+			ctx->move->pb_count++;
+			if (ctx->b->top->index < mid && ctx->b->size > 1)
 			{
-				rb(b);
-				move->rb_count++;
+				rb(ctx);
+				ctx->move->rb_count++;
 			}
 		}
 		else
 		{
-			ra(a);
-			move->ra_count++;
+			ra(ctx);
+			ctx->move->ra_count++;
 		}
 	}
 }
 
-static void	push_back(t_stack *a, t_stack *b, t_move *move)
+static void	push_back(t_context *ctx)
 {
 	int	pos;
 
-	while (b->size > 0)
+	while (ctx->b->size > 0)
 	{
-		pos = get_position(b, b->size - 1);
-		if (pos <= b->size / 2)
+		pos = get_position(ctx->b, ctx->b->size - 1);
+		if (pos <= ctx->b->size / 2)
 		{
 			while (pos-- > 0)
 			{
-				rb(b);
-				move->rb_count++;
+				rb(ctx);
+				ctx->move->rb_count++;
 			}
 		}
 		else
 		{
-			while (pos++ < b->size)
+			while (pos++ < ctx->b->size)
 			{
-				rrb(b);
-				move->rrb_count++;
+				rrb(ctx);
+				ctx->move->rrb_count++;
 			}
 		}
-		pa(a, b);
-		move->pa_count++;
+		pa(ctx);
+		ctx->move->pa_count++;
 	}
 }
 
-void	sort_chunks(t_stack *a, t_stack *b, t_move *move)
+void	sort_chunks(t_context *ctx)
 {
 	int	size;
 	int	chunk;
 	int	end;
 
-	if (!a || !b || !move || a->size < 2 || is_sorted(a))
+	if (!ctx || !ctx->a || !ctx->b || !ctx->move || ctx->a->size < 2 || is_sorted(ctx->a))
 		return ;
-	size = a->size;
+	size = ctx->a->size;
 	chunk = int_sqrt(size);
 	end = 0;
 	while (end < size)
@@ -108,7 +108,7 @@ void	sort_chunks(t_stack *a, t_stack *b, t_move *move)
 		end += chunk;
 		if (end > size)
 			end = size;
-		push_chunk(a, b, move, end);
+		push_chunk(ctx, end);
 	}
-	push_back(a, b, move);
+	push_back(ctx);
 }

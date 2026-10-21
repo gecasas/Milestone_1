@@ -6,101 +6,97 @@
 /*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
 /*                                               +#+#+#+#+#+   +#+            */
 /*   Created: 2026/10/06 11:50:22 by abarba-m         #+#    #+#              */
-/*   Updated: 2026/10/14 18:32:01 by abarba-m        ###   ########.fr        */
+/*   Updated: 2026/10/21 17:15:48 by abarba-m        ###   ########.fr        */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "push_swap.h"
-#include <stdio.h>
 
-static void	print_stack(t_stack *stack)
+void	bench_print(t_context *ctx)
 {
-	t_node	*current;
-	int		i;
-
-	if (!stack || !stack->top)
-	{
-		printf("(empty)\n");
+	if (!ctx)
 		return ;
-	}
-	current = stack->top;
-	printf("[ ");
-	i = 0;
-	while (i < stack->size)
-	{
-		printf("%d", current->value);
-		if (i < stack->size - 1)
-			printf(", ");
-		current = current->next;
-		i++;
-	}
-	printf(" ]\n");
+	ft_printf("[Bench] disorder: %f\n", compute_disorder(ctx->a));
+	ft_printf("[Bench] strategy: %d\n", ctx->algorithm);
+	ft_printf("[Bench] sb: %d", ctx->move->sb_count);
+	ft_printf(" ss: %d ", ctx->move->ss_count);
+	ft_printf(" pa: %d ", ctx->move->pa_count);
+	ft_printf(" pb: %d\n", ctx->move->pb_count);
+	ft_printf("[Bench] ra: %d", ctx->move->ra_count);
+	ft_printf(" rb: %d ", ctx->move->rb_count);
+	ft_printf(" rr: %d ", ctx->move->rr_count);
+	ft_printf(" rra: %d ", ctx->move->rra_count);
+	ft_printf(" rrb: %d ", ctx->move->rrb_count);
+	ft_printf(" rrr: %d\n", ctx->move->rrr_count);
+	clear_instruction_list(ctx);
 }
 
-int	compute_disorder(t_stack *a, t_stack *b)
+void	init_context(t_context *ctx)
 {
-	t_node	*node_a;
-	t_node	*node_b;
-	int		same_values;
-	int		total_values;
-
-	if (!a || !b)
-		return (0);
-	node_a = a->top;
-	node_b = b->top;
-	same_values = 0;
-	total_values = 0;
-	while (node_a && node_b && total_values < a->size && total_values < b->size)
-	{
-		if (node_a->value == node_b->value)
-			same_values++;
-		node_a = node_a->next;
-		node_b = node_b->next;
-		total_values++;
-	}
-	if (total_values == 0)
-		return (0);
-	return ((same_values * 100) / total_values);
+	if (!ctx)
+		return ;
+	stack_init(ctx->a);
+	stack_init(ctx->b);
+	move_init(ctx->move);
+	ctx->instructions = NULL;
+	ctx->instructions_tail = NULL;
+	ctx->bench_mode = 0;
+	ctx->algorithm = ALGO_ADAPTIVE;
+	ctx->has_algorithm = 0;
 }
 
-/*void	parser(t_stack *a, t_stack *b)
+int	main(int argc, char **argv)
 {
-int	order;
-if (!a || !b)
-return ;
-order = compute_disorder(a, b);
-if (order < 20)
-bubble_sort(a);
-else if (order < 50)
-return ;
-else
-return ;
-}*/
+	t_context	ctx;
+	t_algorithm	algorithm;
+	t_stack		stack_a;
+	t_stack		stack_b;
+	t_move		move;
+	int			arg_index;
+	int			bench_mode;
 
-int	main(void)
-{
-	t_stack	a;
-	t_node	*node;
-	t_move	ops;
-
-	stack_init(&a);
-	move_init(&ops);
-	node = new_node(5);
-	stack_add_back(&a, node);
-	node = new_node(2);
-	stack_add_back(&a, node);
-	node = new_node(4);
-	stack_add_back(&a, node);
-	node = new_node(1);
-	stack_add_back(&a, node);
-	node = new_node(3);
-	stack_add_back(&a, node);
-	printf("Before:\n");
-	print_stack(&a);
-	bubble_sort(&a, &ops);
-	printf("After:\n");
-	print_stack(&a);
-	stack_clear(&a);
-	printf("Operations: %d\n", ops.sa_count + ops.sb_count + ops.ss_count + ops.pa_count + ops.pb_count + ops.ra_count + ops.rb_count + ops.rr_count + ops.rra_count + ops.rrb_count + ops.rrr_count);
+	if (argc < 2)
+		return (1);
+	arg_index = 1;
+	ctx.a = &stack_a;
+	ctx.b = &stack_b;
+	ctx.move = &move;
+	bench_mode = 0;
+	while (arg_index < argc)
+	{
+		if (ft_strncmp(argv[arg_index], "--bench", 8) == 0)
+		{
+			bench_mode = 1;
+			arg_index++;
+			continue ;
+		}
+		if (parse_algorithm(argv[arg_index], &algorithm))
+		{
+			ctx.has_algorithm = 1;
+			arg_index++;
+			continue ;
+		}
+		break ;
+	}
+	init_context(&ctx);
+	if ((ctx.has_algorithm && !argparser(argc, argv, ctx.a))
+			|| (!ctx.has_algorithm && !argparser(argc, argv, ctx.a)))
+	{
+		stack_clear(ctx.a);
+		stack_clear(ctx.b);
+		clear_instruction_list(&ctx);
+		write(2, "Error\n", 6);
+		return (0);
+	}
+	if (ctx.has_algorithm)
+		run_algorithm(algorithm, &ctx);
+	else
+		parser(&ctx);
+	fflush(stdout);
+	print_bench_instructions(&ctx);
+	if (bench_mode)
+		bench_print(&ctx);
+	stack_clear(ctx.a);
+	stack_clear(ctx.b);
 	return (0);
 }

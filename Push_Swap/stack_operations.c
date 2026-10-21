@@ -6,7 +6,7 @@
 /*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
 /*                                               +#+#+#+#+#+   +#+            */
 /*   Created: 2026/10/10 15:35:47 by abarba-m         #+#    #+#              */
-/*   Updated: 2026/10/13 13:58:03 by abarba-m        ###   ########.fr        */
+/*   Updated: 2026/10/21 15:47:17 by abarba-m        ###   ########.fr        */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,18 +39,27 @@ void	stack_swap(t_stack *stack)
 	stack->top = second;
 }
 
-void	sa(t_stack *a)
+void	sa(t_context *ctx)
 {
-	stack_swap(a);
+	if (!ctx || !ctx->a || ctx->a->size < 2)
+		return ;
+	append_instruction(ctx, "sa");
+	stack_swap(ctx->a);
 }
 
-void	sb(t_stack *b)
+void	sb(t_context *ctx)
 {
-	stack_swap(b);
+	if (!ctx || !ctx->b || ctx->b->size < 2)
+		return ;
+	append_instruction(ctx, "sb");
+	stack_swap(ctx->b);
 }
 
-void	ss(t_stack *a, t_stack *b)
+void	ss(t_context *ctx)
 {
-	stack_swap(a);
-	stack_swap(b);
+	if (!ctx || !ctx->a || ctx->a->size < 2 || !ctx->b || ctx->b->size < 2)
+		return ;
+	append_instruction(ctx, "ss");
+	stack_swap(ctx->a);
+	stack_swap(ctx->b);
 }

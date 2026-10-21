@@ -1,9 +1,9 @@
 *This project has been created as part of the 42 curriculum by abarba-m.*
 
-#Libft
+#libft
 ##Description
 
-**Libft** is a 42 project whose goal is to create a C library from scratch, recreating basic functions for working with characters, strings, memory, conversions, and linked lists.
+**libft** is a 42 project whose goal is to create a C library from scratch, recreating basic functions for working with characters, strings, memory, conversions, and linked lists.
 
 The project helps develop a better understanding of these functions, as well as improve the use of pointers, dynamic memory, and structures in C.
 
@@ -50,7 +50,7 @@ The library is designed to be reused in future projects throughout the 42 curric
 
 ## Resources
 
-42 Libft project documentation.
+42 libft project documentation.
 
 Linux man pages.
 

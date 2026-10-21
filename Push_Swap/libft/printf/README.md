@@ -44,7 +44,7 @@ Then link printf.a when compiling.
 
 ## Resources
 
-42 Libft project documentation.
+42 libft project documentation.
 
 Linux man pages.
 

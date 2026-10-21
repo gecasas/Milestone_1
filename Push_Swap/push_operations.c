@@ -6,7 +6,7 @@
 /*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
 /*                                               +#+#+#+#+#+   +#+            */
 /*   Created: 2026/10/10 16:52:38 by abarba-m         #+#    #+#              */
-/*   Updated: 2026/10/10 16:53:09 by abarba-m        ###   ########.fr        */
+/*   Updated: 2026/10/21 16:45:09 by abarba-m        ###   ########.fr        */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,22 +61,24 @@ void	stack_push(t_stack *stack, t_node *node)
 	stack->size++;
 }
 
-void	pa(t_stack *a, t_stack *b)
+void	pa(t_context *ctx)
 {
 	t_node	*node;
 
-	if (!a || !b || b->size == 0)
+	if (!ctx || !ctx->a || !ctx->b || ctx->b->size == 0)
 		return ;
-	node = stack_pop(b);
-	stack_push(a, node);
+	append_instruction(ctx, "pa");
+	node = stack_pop(ctx->b);
+	stack_push(ctx->a, node);
 }
 
-void	pb(t_stack *a, t_stack *b)
+void	pb(t_context *ctx)
 {
 	t_node	*node;
 
-	if (!a || !b || a->size == 0)
+	if (!ctx || !ctx->a || !ctx->b || ctx->a->size == 0)
 		return ;
-	node = stack_pop(a);
-	stack_push(b, node);
+	append_instruction(ctx, "pb");
+	node = stack_pop(ctx->a);
+	stack_push(ctx->b, node);
 }

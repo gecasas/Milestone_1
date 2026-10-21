@@ -6,28 +6,33 @@
 /*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
 /*                                               +#+#+#+#+#+   +#+            */
 /*   Created: 2026/10/12 15:40:33 by abarba-m         #+#    #+#              */
-/*   Updated: 2026/10/13 13:58:00 by abarba-m        ###   ########.fr        */
+/*   Updated: 2026/10/21 15:46:04 by abarba-m        ###   ########.fr        */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "push_swap.h"
 
-void	ra(t_stack *a)
+void	ra(t_context *ctx)
 {
-	if (!a || a->size < 2)
+	if (!ctx || !ctx->a || ctx->a->size < 2)
 		return ;
-	a->top = a->top->next;
+	append_instruction(ctx, "ra");
+	ctx->a->top = ctx->a->top->next;
 }
 
-void	rb(t_stack *b)
+void	rb(t_context *ctx)
 {
-	if (!b || b->size < 2)
+	if (!ctx || !ctx->b || ctx->b->size < 2)
 		return ;
-	b->top = b->top->next;
+	append_instruction(ctx, "rb");
+	ctx->b->top = ctx->b->top->next;
 }
 
-void	rr(t_stack *a, t_stack *b)
+void	rr(t_context *ctx)
 {
-	ra(a);
-	rb(b);
+	if (!ctx || !ctx->a || ctx->a->size < 2 || !ctx->b || ctx->b->size < 2)
+		return ;
+	append_instruction(ctx, "rr");
+	ctx->a->top = ctx->a->top->next;
+	ctx->b->top = ctx->b->top->next;
 }
