@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
-/*                                                       :::      ::::::::    */
-/*   sort_chunks.c                                     :+:      :+:    :+:    */
-/*                                                   +:+ +:+         +:+      */
-/*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
-/*                                               +#+#+#+#+#+   +#+            */
-/*   Created: 2026/10/15 18:56:15 by abarba-m         #+#    #+#              */
-/*   Updated: 2026/10/21 15:48:02 by abarba-m        ###   ########.fr        */
+/*                                                        :::      ::::::::   */
+/*   sort_chunks.c                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/10/15 18:56:15 by abarba-m          #+#    #+#             */
+/*   Updated: 2026/10/21 21:07:23 by gecasas          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,7 +98,8 @@ void	sort_chunks(t_context *ctx)
 	int	chunk;
 	int	end;
 
-	if (!ctx || !ctx->a || !ctx->b || !ctx->move || ctx->a->size < 2 || is_sorted(ctx->a))
+	if (!ctx || !ctx->a || !ctx->b || !ctx->move
+		|| ctx->a->size < 2 || is_sorted(ctx->a))
 		return ;
 	size = ctx->a->size;
 	chunk = int_sqrt(size);

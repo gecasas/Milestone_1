@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
-/*                                                       :::      ::::::::    */
-/*   push_swap.c                                       :+:      :+:    :+:    */
-/*                                                   +:+ +:+         +:+      */
-/*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
-/*                                               +#+#+#+#+#+   +#+            */
-/*   Created: 2026/10/06 11:50:22 by abarba-m         #+#    #+#              */
-/*   Updated: 2026/10/21 17:15:48 by abarba-m        ###   ########.fr        */
+/*                                                        :::      ::::::::   */
+/*   push_swap.c                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/10/06 11:50:22 by abarba-m          #+#    #+#             */
+/*   Updated: 2026/10/21 21:06:22 by gecasas          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,7 +80,7 @@ int	main(int argc, char **argv)
 	}
 	init_context(&ctx);
 	if ((ctx.has_algorithm && !argparser(argc, argv, ctx.a))
-			|| (!ctx.has_algorithm && !argparser(argc, argv, ctx.a)))
+		|| (!ctx.has_algorithm && !argparser(argc, argv, ctx.a)))
 	{
 		stack_clear(ctx.a);
 		stack_clear(ctx.b);
