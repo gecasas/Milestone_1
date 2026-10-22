@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   push_swap.c                                        :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/10/06 11:50:22 by abarba-m          #+#    #+#             */
-/*   Updated: 2026/10/21 21:06:22 by gecasas          ###   ########.fr       */
+/*                                                       :::      ::::::::    */
+/*   push_swap.c                                       :+:      :+:    :+:    */
+/*                                                   +:+ +:+         +:+      */
+/*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
+/*                                               +#+#+#+#+#+   +#+            */
+/*   Created: 2026/10/06 11:50:22 by abarba-m         #+#    #+#              */
+/*   Updated: 2026/10/22 14:52:56 by abarba-m        ###   ########.fr        */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,8 +16,12 @@ void	bench_print(t_context *ctx)
 {
 	if (!ctx)
 		return ;
-	ft_printf("[Bench] disorder: %f\n", compute_disorder(ctx->a));
+	if (ctx->a)
+		ft_printf("[Bench] disorder: %d\n", compute_disorder(ctx->a));
+	else
+		ft_printf("[Bench] disorder: N/A (stack a is NULL)\n");
 	ft_printf("[Bench] strategy: %d\n", ctx->algorithm);
+	ft_printf("[Bench] total_ops: %d\n", ctx->total_ops);
 	ft_printf("[Bench] sb: %d", ctx->move->sb_count);
 	ft_printf(" ss: %d ", ctx->move->ss_count);
 	ft_printf(" pa: %d ", ctx->move->pa_count);
@@ -28,7 +32,6 @@ void	bench_print(t_context *ctx)
 	ft_printf(" rra: %d ", ctx->move->rra_count);
 	ft_printf(" rrb: %d ", ctx->move->rrb_count);
 	ft_printf(" rrr: %d\n", ctx->move->rrr_count);
-	clear_instruction_list(ctx);
 }
 
 void	init_context(t_context *ctx)
@@ -40,63 +43,63 @@ void	init_context(t_context *ctx)
 	move_init(ctx->move);
 	ctx->instructions = NULL;
 	ctx->instructions_tail = NULL;
-	ctx->bench_mode = 0;
 	ctx->algorithm = ALGO_ADAPTIVE;
 	ctx->has_algorithm = 0;
 }
 
-int	main(int argc, char **argv)
+void	init_argc_argv(int argc, char **argv, t_context *ctx, int *bench)
 {
-	t_context	ctx;
-	t_algorithm	algorithm;
-	t_stack		stack_a;
-	t_stack		stack_b;
-	t_move		move;
-	int			arg_index;
-	int			bench_mode;
+	int	arg_index;
 
-	if (argc < 2)
-		return (1);
 	arg_index = 1;
-	ctx.a = &stack_a;
-	ctx.b = &stack_b;
-	ctx.move = &move;
-	bench_mode = 0;
+	ctx->has_algorithm = 0;
 	while (arg_index < argc)
 	{
 		if (ft_strncmp(argv[arg_index], "--bench", 8) == 0)
 		{
-			bench_mode = 1;
+			*bench = 1;
 			arg_index++;
 			continue ;
 		}
-		if (parse_algorithm(argv[arg_index], &algorithm))
+		if (parse_algorithm(argv[arg_index], &ctx->algorithm))
 		{
-			ctx.has_algorithm = 1;
+			ctx->has_algorithm = 1;
 			arg_index++;
 			continue ;
 		}
 		break ;
 	}
-	init_context(&ctx);
-	if ((ctx.has_algorithm && !argparser(argc, argv, ctx.a))
-		|| (!ctx.has_algorithm && !argparser(argc, argv, ctx.a)))
-	{
-		stack_clear(ctx.a);
-		stack_clear(ctx.b);
-		clear_instruction_list(&ctx);
-		write(2, "Error\n", 6);
-		return (0);
-	}
-	if (ctx.has_algorithm)
-		run_algorithm(algorithm, &ctx);
-	else
-		parser(&ctx);
-	fflush(stdout);
-	print_bench_instructions(&ctx);
-	if (bench_mode)
-		bench_print(&ctx);
+}
+
+void	global_clear(t_context ctx)
+{
 	stack_clear(ctx.a);
 	stack_clear(ctx.b);
-	return (0);
+	clear_instr_list(&ctx);
+}
+
+int	main(int argc, char **argv)
+{
+	t_context	ctx;
+	t_stack		stack_a;
+	t_stack		stack_b;
+	t_move		move;
+
+	if (argc < 2)
+		return (1);
+	ctx.a = &stack_a;
+	ctx.b = &stack_b;
+	ctx.move = &move;
+	init_context(&ctx);
+	init_argc_argv(argc, argv, &ctx, &ctx.bench_mode);
+	if (!argparser(argc, argv, ctx.a))
+		return (global_clear(ctx), write(2, "Error\n", 6), 1);
+	if (ctx.has_algorithm)
+		run_algorithm(ctx.algorithm, &ctx);
+	else
+		parser(&ctx);
+	print_instructions(&ctx);
+	if (ctx.bench_mode)
+		bench_print(&ctx);
+	return (global_clear(ctx), 0);
 }

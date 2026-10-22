@@ -6,7 +6,7 @@
 /*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
 /*                                               +#+#+#+#+#+   +#+            */
 /*   Created: 2026/10/21 15:11:17 by abarba-m         #+#    #+#              */
-/*   Updated: 2026/10/21 15:56:23 by abarba-m        ###   ########.fr        */
+/*   Updated: 2026/10/22 13:56:38 by abarba-m        ###   ########.fr        */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,20 +43,14 @@ void	parser(t_context *ctx)
 	if (disorder < 0.2)
 	{
 		bubble_sort(ctx);
-		write(1, "Using bubble sort\n", 19);
-		printf("Disorder: %f\n", disorder);
 	}
 	else if (disorder < 0.5)
 	{
 		sort_chunks(ctx);
-		write(1, "Using chunk sort\n", 18);
-		printf("Disorder: %f\n", disorder);
 	}
 	else if (disorder >= 0.5)
 	{
 		sort_radix(ctx);
-		write(1, "Using radix sort\n", 18);
-		printf("Disorder: %f\n", disorder);
 	}
 }
 
@@ -68,6 +62,8 @@ int	parse_algorithm(const char *arg, t_algorithm *algorithm)
 		*algorithm = ALGO_MEDIUM;
 	else if (ft_strncmp(arg, "--complex", 9) == 0)
 		*algorithm = ALGO_COMPLEX;
+	else if (ft_strncmp(arg, "--adaptive", 10) == 0)
+		*algorithm = ALGO_ADAPTIVE;
 	else
 		return (0);
 	return (1);
@@ -79,6 +75,8 @@ void	run_algorithm(t_algorithm algo, t_context *ctx)
 		bubble_sort(ctx);
 	else if (algo == ALGO_MEDIUM)
 		sort_chunks(ctx);
-	else
+	else if (algo == ALGO_COMPLEX)
 		sort_radix(ctx);
+	else if (algo == ALGO_ADAPTIVE)
+		parser(ctx);
 }

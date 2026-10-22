@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   push_swap.h                                        :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/10/06 11:47:38 by abarba-m          #+#    #+#             */
-/*   Updated: 2026/10/21 17:56:24 by gecasas          ###   ########.fr       */
+/*                                                       :::      ::::::::    */
+/*   push_swap.h                                       :+:      :+:    :+:    */
+/*                                                   +:+ +:+         +:+      */
+/*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
+/*                                               +#+#+#+#+#+   +#+            */
+/*   Created: 2026/10/06 11:47:38 by abarba-m         #+#    #+#              */
+/*   Updated: 2026/10/22 14:56:05 by abarba-m        ###   ########.fr        */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,16 +61,24 @@ typedef struct s_context
 	t_move		*move;
 	t_list		*instructions;
 	t_list		*instructions_tail;
-	int			bench_mode;
 	t_algorithm	algorithm;
 	int			has_algorithm;
+	int			total_ops;
+	int			bench_mode;
 }	t_context;
 
 //Flags and argument parsing
 int		is_sorted(t_stack *stack);
 void	append_instruction(t_context *ctx, char *op);
-void	print_bench_instructions(t_context *ctx);
-void	clear_instruction_list(t_context *ctx);
+void	print_instructions(t_context *ctx);
+void	clear_instr_list(t_context *ctx);
+
+//Parser Utils
+int		is_space(char c);
+int		is_option(const char *arg);
+int		parse_number(const char *str, int *num);
+int		has_duplicate(t_stack *a, int num);
+int		add_number(t_stack *a, const char *str);
 
 //Algorithm functions
 float	compute_disorder(t_stack *a);

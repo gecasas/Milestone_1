@@ -17,6 +17,7 @@ SRCS = \
 	sort_radix.c \
 	stack.c \
 	flags.c \
+	argparser_utils.c \
 	algorithm_parser.c \
 	stack_operations.c	
 OBJS = $(SRCS:.c=.o)
