@@ -6,7 +6,7 @@
 /*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
 /*                                               +#+#+#+#+#+   +#+            */
 /*   Created: 2026/10/21 15:11:17 by abarba-m         #+#    #+#              */
-/*   Updated: 2026/10/22 13:56:38 by abarba-m        ###   ########.fr        */
+/*   Updated: 2026/10/22 21:48:03 by abarba-m        ###   ########.fr        */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,16 +40,20 @@ void	parser(t_context *ctx)
 	if (!ctx->a || !ctx->b)
 		return ;
 	disorder = compute_disorder(ctx->a);
+	ctx->original_disorder = disorder;
 	if (disorder < 0.2)
 	{
+		ctx->algorithm = ALGO_SIMPLE;
 		bubble_sort(ctx);
 	}
 	else if (disorder < 0.5)
 	{
+		ctx->algorithm = ALGO_MEDIUM;
 		sort_chunks(ctx);
 	}
 	else if (disorder >= 0.5)
 	{
+		ctx->algorithm = ALGO_COMPLEX;
 		sort_radix(ctx);
 	}
 }

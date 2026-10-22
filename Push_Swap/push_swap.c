@@ -6,7 +6,7 @@
 /*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
 /*                                               +#+#+#+#+#+   +#+            */
 /*   Created: 2026/10/06 11:50:22 by abarba-m         #+#    #+#              */
-/*   Updated: 2026/10/22 14:52:56 by abarba-m        ###   ########.fr        */
+/*   Updated: 2026/10/22 22:44:58 by abarba-m        ###   ########.fr        */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,10 +17,14 @@ void	bench_print(t_context *ctx)
 	if (!ctx)
 		return ;
 	if (ctx->a)
-		ft_printf("[Bench] disorder: %d\n", compute_disorder(ctx->a));
+		ft_printf("[Bench] disorder: %f%% \n", ctx->original_disorder * 100);
+	ft_printf("[Bench] strategy: ");
+	if (ctx->algorithm == ALGO_SIMPLE)
+		ft_printf("Simple / O(n) \n");
+	else if (ctx->algorithm == ALGO_MEDIUM)
+		ft_printf("Medium / O(n√n)\n");
 	else
-		ft_printf("[Bench] disorder: N/A (stack a is NULL)\n");
-	ft_printf("[Bench] strategy: %d\n", ctx->algorithm);
+		ft_printf("Complex / O(n log n)\n");
 	ft_printf("[Bench] total_ops: %d\n", ctx->total_ops);
 	ft_printf("[Bench] sb: %d", ctx->move->sb_count);
 	ft_printf(" ss: %d ", ctx->move->ss_count);
@@ -45,6 +49,7 @@ void	init_context(t_context *ctx)
 	ctx->instructions_tail = NULL;
 	ctx->algorithm = ALGO_ADAPTIVE;
 	ctx->has_algorithm = 0;
+	ctx->bench_mode = 0;
 }
 
 void	init_argc_argv(int argc, char **argv, t_context *ctx, int *bench)

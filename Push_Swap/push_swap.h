@@ -6,7 +6,7 @@
 /*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
 /*                                               +#+#+#+#+#+   +#+            */
 /*   Created: 2026/10/06 11:47:38 by abarba-m         #+#    #+#              */
-/*   Updated: 2026/10/22 14:56:05 by abarba-m        ###   ########.fr        */
+/*   Updated: 2026/10/22 22:54:37 by abarba-m        ###   ########.fr        */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,6 +65,7 @@ typedef struct s_context
 	int			has_algorithm;
 	int			total_ops;
 	int			bench_mode;
+	float		original_disorder;
 }	t_context;
 
 //Flags and argument parsing

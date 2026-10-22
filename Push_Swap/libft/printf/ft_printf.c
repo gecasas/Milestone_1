@@ -6,7 +6,7 @@
 /*   By: abarba-m <abarba-m@student.42malaga.com>  #+#  +:+       +#+         */
 /*                                               +#+#+#+#+#+   +#+            */
 /*   Created: 2026/09/27 15:48:37 by abarba-m         #+#    #+#              */
-/*   Updated: 2026/09/29 16:44:44 by abarba-m        ###   ########.fr        */
+/*   Updated: 2026/10/22 21:35:01 by abarba-m        ###   ########.fr        */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,8 @@ int	ft_formatchecker(va_list args, char format)
 		return (ft_putunbr(va_arg(args, unsigned int)));
 	else if (format == 'x' || format == 'X')
 		return (ft_puthex(va_arg(args, unsigned int), format));
+	else if (format == 'f')
+		return (ft_putfloat(va_arg(args, double)));
 	else if (format == '%')
 		return (ft_putchar(format));
 	return (0);
