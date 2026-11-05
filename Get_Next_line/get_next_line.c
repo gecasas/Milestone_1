@@ -6,7 +6,7 @@
 /*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/02 08:37:56 by gecasas           #+#    #+#             */
-/*   Updated: 2026/10/27 21:27:25 by gecasas          ###   ########.fr       */
+/*   Updated: 2026/11/05 12:09:27 by gecasas          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,12 @@
 static char	*ft_fill_buffer(int fd, char *to_read, char *buffer);
 static char	*ft_search_nl(char **to_read);
 
-char    *get_next_line(int fd)
+char	*get_next_line(int fd)
 {
-	static char    *to_read;
-	char        	*buffer;
-	char        	*line;
-	
+	static char	*to_read;
+	char		*buffer;
+	char		*line;
+
 	buffer = (char *)malloc((BUFFER_SIZE + 1) * sizeof(char));
 	if (fd < 0 || BUFFER_SIZE <= 0 || read(fd, 0, 0) < 0)
 	{
@@ -40,31 +40,31 @@ char    *get_next_line(int fd)
 
 static char	*ft_fill_buffer(int fd, char *to_read, char *buffer)
 {
-    ssize_t	readed;
-    char	*tmp;
+	ssize_t	readed;
+	char	*tmp;
 
-    readed = 1;
-    while (readed > 0 && !ft_strchr(to_read, '\n'))
-    {
-        readed = read(fd, buffer, BUFFER_SIZE);
-        if (readed == -1)
-        {
-            free (to_read);
-            return (NULL);
-        }
-        if (readed == 0)
-            break ;
-        buffer[readed] = '\0';
-        tmp = to_read;
-		if (!tmp)
-            to_read = ft_strdup(buffer);
-		else
-        	to_read = ft_strjoin(tmp, buffer);
-        free(tmp);
-        if (!to_read)
+	readed = 1;
+	while (readed > 0 && !ft_strchr(to_read, '\n'))
+	{
+		readed = read(fd, buffer, BUFFER_SIZE);
+		if (readed == -1)
+		{
+			free (to_read);
 			return (NULL);
-    }
-    return (to_read);
+		}
+		if (readed == 0)
+			break ;
+		buffer[readed] = '\0';
+		tmp = to_read;
+		if (!tmp)
+			to_read = ft_strdup(buffer);
+		else
+			to_read = ft_strjoin(tmp, buffer);
+		free(tmp);
+		if (!to_read)
+			return (NULL);
+	}
+	return (to_read);
 }
 
 static char	*ft_search_nl(char **to_read)

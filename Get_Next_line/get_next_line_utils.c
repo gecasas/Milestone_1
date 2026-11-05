@@ -6,7 +6,7 @@
 /*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/02 08:37:58 by gecasas           #+#    #+#             */
-/*   Updated: 2026/10/02 08:37:58 by gecasas          ###   ########.fr       */
+/*   Updated: 2026/11/05 12:11:09 by gecasas          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -114,4 +114,3 @@ size_t	ft_strlen(const char *s)
 		i++;
 	return (i);
 }
-

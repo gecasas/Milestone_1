@@ -6,21 +6,21 @@
 /*   By: gecasas <gecasas@student.42malaga.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/02 08:37:53 by gecasas           #+#    #+#             */
-/*   Updated: 2026/10/02 08:37:53 by gecasas          ###   ########.fr       */
+/*   Updated: 2026/11/05 12:10:55 by gecasas          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef GET_NEXT_LINE_H
 # define GET_NEXT_LINE_H
-#ifndef BUFFER_SIZE
-# define BUFFER_SIZE 42
+# ifndef BUFFER_SIZE
+#  define BUFFER_SIZE 42
 
-#endif
+# endif
 
 # include <stdlib.h>
 # include <unistd.h>
 
-char    *get_next_line(int fd);
+char	*get_next_line(int fd);
 char	*ft_substr(char const *s, unsigned int start, size_t len);
 char	*ft_strdup(const char *s1);
 char	*ft_strchr(const char *s, int c);
