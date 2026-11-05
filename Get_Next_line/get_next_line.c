@@ -12,70 +12,116 @@
 
 #include "get_next_line.h"
 
-char    *ft_fill_buffer(int fd, char *to_read, char *buffer)
+static char	*ft_fill_buffer(int fd, char *to_read, char *buffer);
+static char	*ft_search_nl(char **to_read);
+
+char    *get_next_line(int fd)
 {
-    ssize_t    readed;
-    char    *tmp;
+	static char    *to_read;
+	char        	*buffer;
+	char        	*line;
+	
+	buffer = (char *)malloc((BUFFER_SIZE + 1) * sizeof(char));
+	if (fd < 0 || BUFFER_SIZE <= 0 || read(fd, 0, 0) < 0)
+	{
+		free(to_read);
+		free(buffer);
+		to_read = NULL;
+		buffer = NULL;
+		return (NULL);
+	}
+	if (!buffer)
+		return (NULL);
+	to_read = ft_fill_buffer(fd, to_read, buffer);
+	line = ft_search_nl(&to_read);
+	free(buffer);
+	return (line);
+}
+
+static char	*ft_fill_buffer(int fd, char *to_read, char *buffer)
+{
+    ssize_t	readed;
+    char	*tmp;
 
     readed = 1;
-    while (readed > 0)
+    while (readed > 0 && !ft_strchr(to_read, '\n'))
     {
-        if (ft_strchr(to_read, '\n'))
-            break ;
         readed = read(fd, buffer, BUFFER_SIZE);
         if (readed == -1)
         {
             free (to_read);
             return (NULL);
         }
-        else if (readed == 0)
+        if (readed == 0)
             break ;
         buffer[readed] = '\0';
-        if (!to_read)
-            to_read = ft_strdup("");
         tmp = to_read;
-        to_read = ft_strjoin(tmp, buffer);
+		if (!tmp)
+            to_read = ft_strdup(buffer);
+		else
+        	to_read = ft_strjoin(tmp, buffer);
         free(tmp);
-        tmp = NULL;
+        if (!to_read)
+			return (NULL);
     }
     return (to_read);
 }
 
-char	*ft_search_nl(char **to_read)
+static char	*ft_search_nl(char **to_read)
 {
 	char	*new_line;
-	char	*tmp;
-	int		i;
+	char	*rest;
+	size_t	i;
 
+	if (!*to_read)
+		return (NULL);
 	i = 0;
-	while (*to_read[i] != '\n' && *to_read[i] != '\0')
-	{
-		new_line[i] = *to_read[i];
+	while ((*to_read)[i] && (*to_read)[i] != '\n')
 		i++;
+	if ((*to_read)[i] == '\n')
+		i++;
+	new_line = ft_substr(*to_read, 0, i);
+	rest = NULL;
+	if ((*to_read)[i])
+		rest = ft_substr(*to_read, i, ft_strlen(*to_read) - i);
+	if (!new_line || ((*to_read)[i] && !rest))
+	{
+		free(new_line);
+		free(rest);
+		new_line = NULL;
+		rest = NULL;
 	}
-	tmp = ft_substr(*to_read, i + 1, ft_strlen(*to_read - i));
-	*to_read = tmp;
-	tmp = NULL;
+	free(*to_read);
+	*to_read = rest;
 	return (new_line);
 }
 
-char    *get_next_line(int fd)
+void	*ft_calloc(size_t count, size_t size)
 {
-    static char    *to_read;
-    char        	*buffer;
-    char        	*line;
-    
-    buffer = (char *)malloc((BUFFER_SIZE + 1) * sizeof(char));
-    if (fd < 0 || BUFFER_SIZE <= 0 || read(fd, 0, 0) < 0)
-    {
-        free(to_read);
-        free(buffer);
-        to_read = NULL;
-        buffer = NULL;
-        return (NULL);
-    }
-    if (!buffer)
-        return (NULL);
-	to_read = ft_fill_buffer(fd, to_read, buffer);
-	//buscar '\n' y dejarlo en la linea devuelta, despues estatica empieza justo despues
+	char	*str;
+	size_t	total;
+
+	total = count * size;
+	if (count != 0 && (total / count) != size)
+		return (NULL);
+	str = malloc(total);
+	if (!str)
+		return (NULL);
+	ft_memzero(str, '\0', size * count);
+	return (str);
+}
+
+void	*ft_memzero(void *s, int c, size_t n)
+{
+	size_t			i;
+	unsigned char	*str;
+
+	str = (unsigned char *)s;
+	i = 0;
+	while (i < n)
+	{
+		str[i] = (unsigned char)c;
+		i++;
+	}
+	return (s);
 }
